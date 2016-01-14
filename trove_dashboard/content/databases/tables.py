@@ -88,7 +88,8 @@ class RestartInstance(tables.BatchAction):
 
     def allowed(self, request, instance=None):
         return ((instance.status in ACTIVE_STATES
-                 or instance.status == 'SHUTDOWN'))
+                 or instance.status == 'SHUTDOWN'
+                 or instance.status == 'RESTART_REQUIRED'))
 
     def action(self, request, obj_id):
         api.trove.instance_restart(request, obj_id)
@@ -410,6 +411,45 @@ class ResizeInstance(tables.LinkAction):
         return urlresolvers.reverse(self.url, args=[instance_id])
 
 
+class AttachConfiguration(tables.LinkAction):
+    name = "attach_configuration"
+    verbose_name = _("Attach Configuration Group")
+    url = "horizon:project:databases:attach_config"
+    classes = ("btn-attach-config", "ajax-modal")
+
+    def allowed(self, request, instance=None):
+        return (instance.status in ACTIVE_STATES
+                and not hasattr(instance, 'configuration'))
+
+
+class DetachConfiguration(tables.BatchAction):
+    @staticmethod
+    def action_present(count):
+        return ungettext_lazy(
+            u"Detach Configuration Group",
+            u"Detach Configuration Groups",
+            count
+        )
+
+    @staticmethod
+    def action_past(count):
+        return ungettext_lazy(
+            u"Detached Configuration Group",
+            u"Detached Configuration Groups",
+            count
+        )
+
+    name = "detach_configuration"
+    classes = ('btn-danger', 'btn-detach-config')
+
+    def allowed(self, request, instance=None):
+        return (instance.status in ACTIVE_STATES and
+                hasattr(instance, 'configuration'))
+
+    def action(self, request, obj_id):
+        api.trove.instance_detach_configuration(request, obj_id)
+
+
 class RootAction(tables.Action):
     def handle(self, table, request, obj_ids):
         try:
@@ -590,6 +630,8 @@ class InstancesTable(tables.DataTable):
         row_actions = (CreateBackup,
                        ResizeVolume,
                        ResizeInstance,
+                       AttachConfiguration,
+                       DetachConfiguration,
                        ManageRoot,
                        RestartInstance,
                        DetachReplica,
@@ -655,3 +697,15 @@ class InstanceBackupsTable(tables.DataTable):
         row_class = UpdateRow
         table_actions = (backup_tables.LaunchLink, backup_tables.DeleteBackup)
         row_actions = (backup_tables.RestoreLink, backup_tables.DeleteBackup)
+
+
+class ConfigDefaultsTable(tables.DataTable):
+    name = tables.Column('name', verbose_name=_('Property'))
+    value = tables.Column('value', verbose_name=_('Value'))
+
+    class Meta(object):
+        name = 'config_defaults'
+        verbose_name = _('Configuration Defaults')
+
+    def get_object_id(self, datum):
+        return datum.name

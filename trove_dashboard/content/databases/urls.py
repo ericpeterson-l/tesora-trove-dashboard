@@ -24,9 +24,14 @@ USERS = r'^(?P<instance_id>[^/]+)/(?P<user_name>[^/]+)/%s$'
 
 urlpatterns = patterns(
     '',
-    url(r'^$', views.IndexView.as_view(), name='index'),
-    url(r'^launch$', views.LaunchInstanceView.as_view(), name='launch'),
-    url(INSTANCES % '', views.DetailView.as_view(), name='detail'),
+    url(r'^$', views.IndexView.as_view(),
+        name='index'),
+    url(r'^launch$', views.LaunchInstanceView.as_view(),
+        name='launch'),
+    url(INSTANCES % '', views.DetailView.as_view(),
+        name='detail'),
+    url(INSTANCES % 'create_database', views.CreateDatabaseView.as_view(),
+        name='create_database'),
     url(INSTANCES % 'resize_volume', views.ResizeVolumeView.as_view(),
         name='resize_volume'),
     url(INSTANCES % 'resize_instance', views.ResizeInstanceView.as_view(),
@@ -37,8 +42,8 @@ urlpatterns = patterns(
         name='edit_user'),
     url(USERS % 'access_detail', views.AccessDetailView.as_view(),
         name='access_detail'),
-    url(INSTANCES % 'create_database', views.CreateDatabaseView.as_view(),
-        name='create_database'),
+    url(INSTANCES % 'attach_config', views.AttachConfigurationView.as_view(),
+        name='attach_config'),
     url(INSTANCES % 'manage_root', views.ManageRootView.as_view(),
         name='manage_root'),
 )
