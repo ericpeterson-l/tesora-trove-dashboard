@@ -335,3 +335,31 @@ def configuration_update(request, group_id, values):
 
 def configuration_default(request, instance_id):
     return troveclient(request).instances.configuration(instance_id)
+
+
+def log_list(request, instance_id):
+    return troveclient(request).instances.log_list(instance_id)
+
+
+def log_enable(request, instance_id, log_name):
+    return troveclient(request).instances.log_enable(instance_id, log_name)
+
+
+def log_disable(request, instance_id, log_name):
+    return troveclient(request).instances.log_disable(instance_id, log_name)
+
+
+def log_publish(request, instance_id, log_name):
+    return troveclient(request).instances.log_publish(instance_id, log_name)
+
+
+def log_discard(request, instance_id, log_name):
+    return troveclient(request).instances.log_discard(instance_id, log_name)
+
+
+def log_tail(request, instance_id, log_name, publish, lines, swift=None):
+    return troveclient(request).instances.log_generator(instance_id,
+                                                        log_name,
+                                                        publish=publish,
+                                                        lines=lines,
+                                                        swift=swift)
