@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from django.conf import settings
 from django import template
 from django.utils.translation import ugettext_lazy as _
 
@@ -56,9 +55,15 @@ class UserTab(tabs.TableTab):
             data = api.trove.users_list(self.request, instance.id)
             for user in data:
                 user.instance = instance
-                user.access = api.trove.user_list_access(self.request,
-                                                         instance.id,
-                                                         user.name)
+                try:
+                    user.access = api.trove.user_list_access(self.request,
+                                                             instance.id,
+                                                             user.name)
+                except exceptions.NOT_FOUND:
+                    pass
+                except Exception:
+                    msg = _('Unable to get user access data.')
+                    exceptions.handle(self.request, msg)
         except Exception:
             msg = _('Unable to get user data.')
             exceptions.handle(self.request, msg)
@@ -66,10 +71,7 @@ class UserTab(tabs.TableTab):
         return data
 
     def allowed(self, request):
-        perms = getattr(settings, 'TROVE_ADD_USER_PERMS', [])
-        if perms:
-            return request.user.has_perms(perms)
-        return True
+        return tables.has_user_add_perm(request)
 
 
 class DatabaseTab(tabs.TableTab):
@@ -93,10 +95,7 @@ class DatabaseTab(tabs.TableTab):
         return data
 
     def allowed(self, request):
-        perms = getattr(settings, 'TROVE_ADD_DATABASE_PERMS', [])
-        if perms:
-            return request.user.has_perms(perms)
-        return True
+        return tables.has_database_add_perm(request)
 
 
 class BackupsTab(tabs.TableTab):
