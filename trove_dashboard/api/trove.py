@@ -58,17 +58,12 @@ def cluster_delete(request, cluster_id):
 def cluster_create(request, name, volume, flavor, num_instances,
                    datastore, datastore_version,
                    nics=None, root_password=None):
-    # TODO(dklyle): adding to support trove without volume
-    # support for now until API supports checking for volume support
-    if volume > 0:
-        volume_params = {'size': volume}
-    else:
-        volume_params = None
     instances = []
     for i in range(num_instances):
         instance = {}
         instance["flavorRef"] = flavor
-        instance["volume"] = volume_params
+        if volume > 0:
+            instance["volume"] = {'size': volume}
         if nics:
             instance["nics"] = [{"net-id": nics}]
         instances.append(instance)
@@ -155,6 +150,16 @@ def database_list(request, instance_id):
     return troveclient(request).databases.list(instance_id)
 
 
+def database_create(request, instance_id, db_name, character_set=None,
+                    collation=None):
+    database = {'name': db_name}
+    if collation:
+        database['collate'] = collation
+    if character_set:
+        database['character_set'] = character_set
+    return troveclient(request).databases.create(instance_id, [database])
+
+
 def database_delete(request, instance_id, db_name):
     return troveclient(request).databases.delete(instance_id, db_name)
 
@@ -202,12 +207,45 @@ def users_list(request, instance_id):
     return troveclient(request).users.list(instance_id)
 
 
+def user_create(request, instance_id, username, password,
+                host=None, databases=[]):
+    user = {'name': username, 'password': password, 'databases': databases}
+    if host:
+        user['host'] = host
+
+    return troveclient(request).users.create(instance_id, [user])
+
+
 def user_delete(request, instance_id, user):
     return troveclient(request).users.delete(instance_id, user)
 
 
-def user_list_access(request, instance_id, user):
-    return troveclient(request).users.list_access(instance_id, user)
+def user_update_attributes(request, instance_id, name, host=None,
+                           new_name=None, new_password=None, new_host=None):
+    new_attributes = {}
+    if new_name:
+        new_attributes['name'] = new_name
+    if new_password:
+        new_attributes['password'] = new_password
+    if new_host:
+        new_attributes['host'] = new_host
+    return troveclient(request).users.update_attributes(
+        instance_id, name, newuserattr=new_attributes, hostname=host)
+
+
+def user_list_access(request, instance_id, username, host=None):
+    return troveclient(request).users.list_access(
+        instance_id, username, hostname=host)
+
+
+def user_grant_access(request, instance_id, username, databases, host=None):
+    return troveclient(request).users.grant(
+        instance_id, username, databases, hostname=host)
+
+
+def user_revoke_access(request, instance_id, username, database, host=None):
+    return troveclient(request).users.revoke(
+        instance_id, username, database, hostname=host)
 
 
 def datastore_list(request):
