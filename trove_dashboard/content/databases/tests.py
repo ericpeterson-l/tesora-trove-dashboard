@@ -31,6 +31,7 @@ from trove_dashboard import api
 from trove_dashboard.content.databases import forms
 from trove_dashboard.content.databases import tables
 from trove_dashboard.content.databases import views
+from trove_dashboard.content.databases.workflows import create_instance
 from trove_dashboard.test import helpers as test
 
 INDEX_URL = reverse('horizon:project:databases:index')
@@ -1235,3 +1236,24 @@ class DatabaseTests(test.TestCase):
             {'action': 'databases__detach_configuration__%s' % database.id})
 
         self.assertRedirectsNoFollow(res, INDEX_URL)
+
+    @test.create_stubs({
+        api.trove: ('instance_list',)
+    })
+    def test_master_list_pagination(self):
+        request = http.HttpRequest()
+
+        first_part = common.Paginated(self.databases.list()[:1],
+                                      next_marker='marker')
+        second_part = common.Paginated(self.databases.list()[1:])
+
+        api.trove.instance_list(request).AndReturn(first_part)
+        (api.trove.instance_list(request, marker='marker')
+         .AndReturn(second_part))
+        api.trove.instance_list(request).AndReturn(first_part)
+
+        self.mox.ReplayAll()
+
+        advanced_page = create_instance.AdvancedAction(request, None)
+        choices = advanced_page.populate_master_choices(request, None)
+        self.assertTrue(len(choices) == len(self.databases.list()) + 1)
