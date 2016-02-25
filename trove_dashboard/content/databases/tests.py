@@ -1066,7 +1066,7 @@ class DatabaseTests(test.TestCase):
         api.trove: ('datastore_flavors', 'datastore_volume_types',
                     'backup_list', 'instance_create',
                     'datastore_list', 'datastore_version_list',
-                    'instance_list', 'instance_get', 'region_list'),
+                    'instance_list_all', 'instance_get', 'region_list'),
         dash_api.neutron: ('network_list',),
         dash_api.nova: ('availability_zone_list',)
     })
@@ -1083,7 +1083,7 @@ class DatabaseTests(test.TestCase):
         api.trove.backup_list(IsA(http.HttpRequest)).AndReturn(
             self.database_backups.list())
 
-        api.trove.instance_list(IsA(http.HttpRequest)).AndReturn(
+        api.trove.instance_list_all(IsA(http.HttpRequest)).AndReturn(
             self.databases.list())
 
         api.trove.datastore_list(IsA(http.HttpRequest))\

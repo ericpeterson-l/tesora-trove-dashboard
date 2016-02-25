@@ -471,15 +471,7 @@ class AdvancedAction(workflows.Action):
     def _get_instances(self):
         instances = []
         try:
-            instances = api.trove.instance_list(self.request)
-            marker = instances.next
-            while marker or False:
-                temp_instances = api.trove.instance_list(self.request,
-                                                         marker=marker)
-                marker = temp_instances.next
-                instances.items += temp_instances.items
-                instances.links = temp_instances.links
-            instances.next = None
+            instances = api.trove.instance_list_all(self.request)
         except Exception:
             msg = _('Unable to retrieve database instances.')
             exceptions.handle(self.request, msg)
