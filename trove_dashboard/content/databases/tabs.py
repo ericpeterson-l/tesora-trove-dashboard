@@ -22,6 +22,7 @@ from horizon import tabs
 from trove_dashboard import api
 from trove_dashboard.content.database_configurations \
     import config_param_manager
+from trove_dashboard.content.databases import db_capability
 from trove_dashboard.content.databases.logs import tables as log_tables
 from trove_dashboard.content.databases import tables
 
@@ -47,8 +48,8 @@ class OverviewTab(tabs.Tab):
 
     def get_template_name(self, request):
         instance = self.tab_group.kwargs['instance']
-        template_file = ('project/databases/_detail_overview_%s.html'
-                         % instance.datastore['type'])
+        template_file = ('project/databases/_detail_overview_%s.html' %
+                         self._get_template_type(instance.datastore['type']))
         try:
             template.loader.get_template(template_file)
             return template_file
@@ -56,6 +57,12 @@ class OverviewTab(tabs.Tab):
             # This datastore type does not have a template file
             # Just use the base template file
             return ('project/databases/_detail_overview.html')
+
+    def _get_template_type(self, datastore):
+        if db_capability.is_mysql_compatible(datastore):
+            return 'mysql'
+
+        return datastore
 
 
 class UserTab(tabs.TableTab):
