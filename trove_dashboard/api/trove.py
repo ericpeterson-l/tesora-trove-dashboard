@@ -121,8 +121,8 @@ def instance_delete(request, instance_id):
 def instance_create(request, name, volume, flavor, databases=None,
                     users=None, restore_point=None, nics=None,
                     datastore=None, datastore_version=None,
-                    replica_of=None, volume_type=None,
-                    configuration=None):
+                    replica_of=None, replica_count=None,
+                    volume_type=None, configuration=None):
     # TODO(dklyle): adding conditional to support trove without volume
     # support for now until API supports checking for volume support
     if volume > 0:
@@ -142,6 +142,7 @@ def instance_create(request, name, volume, flavor, databases=None,
         datastore=datastore,
         datastore_version=datastore_version,
         replica_of=replica_of,
+        replica_count=replica_count,
         configuration=configuration)
 
 
@@ -167,13 +168,13 @@ def instance_detach_replica(request, instance_id):
                                                detach_replica_source=True)
 
 
-def instance_attach_configuration(request, instance_id, configuration):
-    return troveclient(request).instances.modify(instance_id,
-                                                 configuration=configuration)
+def promote_to_replica_source(request, instance_id):
+    return troveclient(request).instances.promote_to_replica_source(
+        instance_id)
 
 
-def instance_detach_configuration(request, instance_id):
-    return troveclient(request).instances.modify(instance_id)
+def eject_replica_source(request, instance_id):
+    return troveclient(request).instances.eject_replica_source(instance_id)
 
 
 def database_list(request, instance_id):
@@ -293,6 +294,15 @@ def datastore_list(request):
 
 def datastore_version_list(request, datastore):
     return troveclient(request).datastore_versions.list(datastore)
+
+
+def instance_attach_configuration(request, instance_id, configuration):
+    return troveclient(request).instances.modify(instance_id,
+                                                 configuration=configuration)
+
+
+def instance_detach_configuration(request, instance_id):
+    return troveclient(request).instances.modify(instance_id)
 
 
 def configuration_list(request):

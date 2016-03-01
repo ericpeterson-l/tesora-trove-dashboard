@@ -208,6 +208,10 @@ DATABASE_DATA_THREE = {
         "links": [],
         "name": "config1"
     },
+    "replicas": {
+        "id": "0ef978d3-7c83-4192-ab86-b7a0a5010fa0",
+        "links": [],
+    }
 }
 
 BACKUP_ONE = {
@@ -480,7 +484,6 @@ def data(TEST):
                                    DATABASE_DATA_TWO)
     database3 = instances.Instance(instances.Instances(None),
                                    DATABASE_DATA_THREE)
-
     bkup1 = backups.Backup(backups.Backups(None), BACKUP_ONE)
     bkup2 = backups.Backup(backups.Backups(None), BACKUP_TWO)
     bkup3 = backups.Backup(backups.Backups(None), BACKUP_TWO_INC)
