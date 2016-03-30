@@ -1,16 +1,18 @@
 # Cedric Savignan <liced@liced.fr>, 2016. #zanata
 # Corinne Verheyde <cverheyd@gmail.com>, 2016. #zanata
+# Gael Rehault <gael_rehault@dell.com>, 2016. #zanata
 # Gérald LONLAS <g.lonlas@gmail.com>, 2016. #zanata
+# JF Taltavull <jftalta@gmail.com>, 2016. #zanata
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2016-02-26 08:30+0000\n"
+"POT-Creation-Date: 2016-03-14 16:59+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2016-03-09 03:34+0000\n"
-"Last-Translator: Corinne Verheyde <cverheyd@gmail.com>\n"
+"PO-Revision-Date: 2016-03-28 07:00+0000\n"
+"Last-Translator: JF Taltavull <jftalta@gmail.com>\n"
 "Language-Team: French\n"
 "Language: fr\n"
 "X-Generator: Zanata 3.7.3\n"
@@ -115,6 +117,9 @@ msgstr "Hôte autorisé"
 
 msgid "Allowed Host (optional)"
 msgstr "Hôte autorisé (optionnel)"
+
+msgid "Applicable only if the volume size is specified."
+msgstr "Applicable seulement si la taille du volume est specifiée."
 
 msgid "At least one network must be specified."
 msgstr "Au moins un réseau doit être spécifié."
@@ -529,6 +534,9 @@ msgstr "Pas de gabarits disponibles"
 
 msgid "No instances available"
 msgstr "Aucune instance disponible"
+
+msgid "No volume type"
+msgstr "Pas de type de volume"
 
 msgid "None"
 msgstr "Aucun"
@@ -1086,6 +1094,9 @@ msgstr "Volume"
 msgid "Volume Size"
 msgstr "Taille du Volume"
 
+msgid "Volume Type"
+msgstr "Type de Volume"
+
 #, python-format
 msgid "You are not allowed to %(action)s: %(objs)s"
 msgstr "Vous n'êtes pas autorisé à %(action)s : %(objs)s"
@@ -1097,8 +1108,8 @@ msgid ""
 msgstr ""
 "Vous pouvez effectuer une sauvegarde incrémentale en spécifiant une "
 "sauvegarde totale.<strong>Cependant,</strong> toutes les bases de données ne "
-"supportent pas les sauvegardes incrémentales, dans ce cas, l'opération se "
-"termine en erreur."
+"supportent pas les sauvegardes incrémentales, et dans ce cas l'opération se "
+"terminera en erreur."
 
 msgid "You must select a datastore type and version."
 msgstr "Vous devez sélectionner un type et une version de datastore."
