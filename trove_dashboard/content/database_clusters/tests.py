@@ -14,6 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import binascii
+import logging
+
 from django.core.urlresolvers import reverse
 from django import http
 
@@ -128,54 +131,60 @@ class ClustersTests(test.TestCase):
 
     def test_launch_cluster_mongo_fields(self):
         datastore = 'mongodb'
-        fields = self.launch_cluster_fields_setup(datastore, '2.6')
+        datastore_version = '2.6'
+        fields = self.launch_cluster_fields_setup(datastore,
+                                                  datastore_version)
+        field_name = self._build_flavor_widget_name(datastore,
+                                                    datastore_version)
 
         self.assertTrue(self._contains_datastore_in_attribute(
-            fields['flavor'], datastore))
+            fields[field_name], field_name))
         self.assertTrue(self._contains_datastore_in_attribute(
-            fields['num_instances'], datastore))
+            fields['num_instances'], field_name))
         self.assertTrue(self._contains_datastore_in_attribute(
-            fields['num_shards'], datastore))
+            fields['num_shards'], field_name))
         self.assertFalse(self._contains_datastore_in_attribute(
-            fields['root_password'], datastore))
+            fields['root_password'], field_name))
         self.assertFalse(self._contains_datastore_in_attribute(
-            fields['num_instances_vertica'], datastore))
-        self.assertFalse(self._contains_datastore_in_attribute(
-            fields['vertica_flavor'], datastore))
+            fields['num_instances_vertica'], field_name))
 
     def test_launch_cluster_redis_fields(self):
         datastore = 'redis'
-        fields = self.launch_cluster_fields_setup(datastore, '3.0')
+        datastore_version = '3.0'
+        fields = self.launch_cluster_fields_setup(datastore,
+                                                  datastore_version)
+        field_name = self._build_flavor_widget_name(datastore,
+                                                    datastore_version)
 
         self.assertTrue(self._contains_datastore_in_attribute(
-            fields['flavor'], datastore))
+            fields[field_name], field_name))
         self.assertTrue(self._contains_datastore_in_attribute(
-            fields['num_instances'], datastore))
+            fields['num_instances'], field_name))
         self.assertFalse(self._contains_datastore_in_attribute(
-            fields['num_shards'], datastore))
+            fields['num_shards'], field_name))
         self.assertFalse(self._contains_datastore_in_attribute(
-            fields['root_password'], datastore))
+            fields['root_password'], field_name))
         self.assertFalse(self._contains_datastore_in_attribute(
-            fields['num_instances_vertica'], datastore))
-        self.assertFalse(self._contains_datastore_in_attribute(
-            fields['vertica_flavor'], datastore))
+            fields['num_instances_vertica'], field_name))
 
     def test_launch_cluster_vertica_fields(self):
         datastore = 'vertica'
-        fields = self.launch_cluster_fields_setup(datastore, '7.1')
+        datastore_version = '7.1'
+        fields = self.launch_cluster_fields_setup(datastore,
+                                                  datastore_version)
+        field_name = self._build_flavor_widget_name(datastore,
+                                                    datastore_version)
 
-        self.assertFalse(self._contains_datastore_in_attribute(
-            fields['flavor'], datastore))
-        self.assertFalse(self._contains_datastore_in_attribute(
-            fields['num_instances'], datastore))
-        self.assertFalse(self._contains_datastore_in_attribute(
-            fields['num_shards'], datastore))
         self.assertTrue(self._contains_datastore_in_attribute(
-            fields['root_password'], datastore))
+            fields[field_name], field_name))
+        self.assertFalse(self._contains_datastore_in_attribute(
+            fields['num_instances'], field_name))
+        self.assertFalse(self._contains_datastore_in_attribute(
+            fields['num_shards'], field_name))
         self.assertTrue(self._contains_datastore_in_attribute(
-            fields['num_instances_vertica'], datastore))
+            fields['root_password'], field_name))
         self.assertTrue(self._contains_datastore_in_attribute(
-            fields['vertica_flavor'], datastore))
+            fields['num_instances_vertica'], field_name))
 
     @test.create_stubs({trove_api.trove: ('datastore_flavors',
                                           'datastore_list',
@@ -235,16 +244,16 @@ class ClustersTests(test.TestCase):
             nics=cluster_network,
             root_password=None).AndReturn(self.trove_clusters.first())
 
+        field_name = self._build_flavor_widget_name(cluster_datastore,
+                                                    cluster_datastore_version)
         self.mox.ReplayAll()
         post = {
             'name': cluster_name,
             'volume': cluster_volume,
             'num_instances': cluster_instances,
             'num_shards': 1,
-            'num_instances_per_shards': cluster_instances,
-            'datastore': cluster_datastore + u'-' + cluster_datastore_version,
-            'flavor': cluster_flavor,
-            'network': cluster_network
+            'datastore': field_name,
+            field_name: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         }
 
         res = self.client.post(LAUNCH_URL, post)
@@ -291,15 +300,16 @@ class ClustersTests(test.TestCase):
             nics=cluster_network,
             root_password=None).AndReturn(self.trove_clusters.first())
 
+        field_name = self._build_flavor_widget_name(cluster_datastore,
+                                                    cluster_datastore_version)
         self.mox.ReplayAll()
         post = {
             'name': cluster_name,
             'volume': cluster_volume,
             'num_instances': cluster_instances,
             'num_shards': 1,
-            'num_instances_per_shards': cluster_instances,
-            'datastore': cluster_datastore + u'-' + cluster_datastore_version,
-            'flavor': cluster_flavor,
+            'datastore': field_name,
+            field_name: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
             'network': cluster_network
         }
 
@@ -344,16 +354,16 @@ class ClustersTests(test.TestCase):
             nics=cluster_network,
             root_password=None).AndReturn(self.trove_clusters.first())
 
+        field_name = self._build_flavor_widget_name(cluster_datastore,
+                                                    cluster_datastore_version)
         self.mox.ReplayAll()
         post = {
             'name': cluster_name,
             'volume': cluster_volume,
             'num_instances': cluster_instances,
             'num_shards': 1,
-            'num_instances_per_shards': cluster_instances,
-            'datastore': cluster_datastore + u'-' + cluster_datastore_version,
-            'flavor': cluster_flavor,
-            'network': cluster_network
+            'datastore': field_name,
+            field_name: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         }
 
         res = self.client.post(LAUNCH_URL, post)
@@ -489,12 +499,27 @@ class ClustersTests(test.TestCase):
         self.assertTemplateUsed(
             res, 'project/database_clusters/cluster_grow_details.html')
 
-        action = "".join([tables.ClusterGrowInstancesTable.Meta.name, '__',
-                          tables.ClusterGrowAction.name, '__',
-                          cluster.id])
-        res = self.client.post(url, {'action': action})
-        self.assertMessageCount(error=1)
-        self.assertRedirectsNoFollow(res, INDEX_URL)
+        toSuppress = ["trove_dashboard.content.database_clusters.tables"]
+
+        # Suppress expected log messages in the test output
+        loggers = []
+        for cls in toSuppress:
+            logger = logging.getLogger(cls)
+            loggers.append((logger, logger.getEffectiveLevel()))
+            logger.setLevel(logging.CRITICAL)
+
+        try:
+            action = "".join([tables.ClusterGrowInstancesTable.Meta.name, '__',
+                              tables.ClusterGrowAction.name, '__',
+                              cluster.id])
+            res = self.client.post(url, {'action': action})
+
+            self.assertMessageCount(error=1)
+            self.assertRedirectsNoFollow(res, INDEX_URL)
+        finally:
+            # Restore the previous log levels
+            for (log, level) in loggers:
+                log.setLevel(level)
 
     @test.create_stubs({trove_api.trove: ('cluster_get',
                                           'cluster_shrink')})
@@ -547,9 +572,24 @@ class ClustersTests(test.TestCase):
         action = "".join([tables.ClusterShrinkInstancesTable.Meta.name, '__',
                           tables.ClusterShrinkAction.name, '__',
                           cluster_id])
-        res = self.client.post(url, {'action': action})
-        self.assertMessageCount(error=1)
-        self.assertRedirectsNoFollow(res, INDEX_URL)
+
+        toSuppress = ["trove_dashboard.content.database_clusters.tables"]
+
+        # Suppress expected log messages in the test output
+        loggers = []
+        for cls in toSuppress:
+            logger = logging.getLogger(cls)
+            loggers.append((logger, logger.getEffectiveLevel()))
+            logger.setLevel(logging.CRITICAL)
+
+        try:
+            res = self.client.post(url, {'action': action})
+            self.assertMessageCount(error=1)
+            self.assertRedirectsNoFollow(res, INDEX_URL)
+        finally:
+            # Restore the previous log levels
+            for (log, level) in loggers:
+                log.setLevel(level)
 
     def _get_filtered_datastores(self, datastore):
         filtered_datastore = []
@@ -571,3 +611,10 @@ class ClustersTests(test.TestCase):
             if datastore in key:
                 return True
         return False
+
+    def _build_datastore_display_text(self, datastore, datastore_version):
+        return datastore + ' - ' + datastore_version
+
+    def _build_flavor_widget_name(self, datastore, datastore_version):
+        return binascii.hexlify(self._build_datastore_display_text(
+            datastore, datastore_version))
