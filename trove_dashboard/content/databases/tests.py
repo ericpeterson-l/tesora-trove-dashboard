@@ -41,8 +41,12 @@ DETAILS_URL = reverse('horizon:project:databases:detail', args=['id'])
 
 
 class DatabaseTests(test.TestCase):
-    @test.create_stubs(
-        {api.trove: ('instance_list', 'flavor_list')})
+    @test.create_stubs({
+        api.trove: ('datastore_version_list',
+                    'flavor_list',
+                    'instance_list'
+                    )
+    })
     def test_index(self):
         # Mock database instances
         databases = common.Paginated(self.databases.list())
@@ -51,6 +55,8 @@ class DatabaseTests(test.TestCase):
         # Mock flavors
         api.trove.flavor_list(IsA(http.HttpRequest))\
             .AndReturn(self.flavors.list())
+        api.trove.datastore_version_list(IsA(http.HttpRequest), IsA(str)).\
+            MultipleTimes().AndReturn(self.datastore_versions.list())
 
         self.mox.ReplayAll()
         res = self.client.get(INDEX_URL)
@@ -59,8 +65,12 @@ class DatabaseTests(test.TestCase):
         self.assertContains(res, '10.0.0.3')
         self.assertContains(res, 'trove.instance-2.com')
 
-    @test.create_stubs(
-        {api.trove: ('instance_list', 'flavor_list')})
+    @test.create_stubs({
+        api.trove: ('datastore_version_list',
+                    'flavor_list',
+                    'instance_list'
+                    )
+    })
     def test_index_flavor_exception(self):
         # Mock database instances
         databases = common.Paginated(self.databases.list())
@@ -69,6 +79,8 @@ class DatabaseTests(test.TestCase):
         # Mock flavors
         api.trove.flavor_list(IsA(http.HttpRequest))\
             .AndRaise(self.exceptions.trove)
+        api.trove.datastore_version_list(IsA(http.HttpRequest), IsA(str)).\
+            MultipleTimes().AndReturn(self.datastore_versions.list())
 
         self.mox.ReplayAll()
         res = self.client.get(INDEX_URL)
@@ -87,8 +99,12 @@ class DatabaseTests(test.TestCase):
         self.assertTemplateUsed(res, 'project/databases/index.html')
         self.assertMessageCount(res, error=1)
 
-    @test.create_stubs(
-        {api.trove: ('instance_list', 'flavor_list')})
+    @test.create_stubs({
+        api.trove: ('datastore_version_list',
+                    'flavor_list',
+                    'instance_list'
+                    )
+    })
     def test_index_pagination(self):
         # Mock database instances
         databases = self.databases.list()
@@ -99,6 +115,8 @@ class DatabaseTests(test.TestCase):
         # Mock flavors
         api.trove.flavor_list(IsA(http.HttpRequest))\
             .AndReturn(self.flavors.list())
+        api.trove.datastore_version_list(IsA(http.HttpRequest), IsA(str)).\
+            MultipleTimes().AndReturn(self.datastore_versions.list())
 
         self.mox.ReplayAll()
         res = self.client.get(INDEX_URL)
@@ -106,8 +124,12 @@ class DatabaseTests(test.TestCase):
         self.assertContains(
             res, 'marker=' + last_record.id)
 
-    @test.create_stubs(
-        {api.trove: ('instance_list', 'flavor_list')})
+    @test.create_stubs({
+        api.trove: ('datastore_version_list',
+                    'flavor_list',
+                    'instance_list'
+                    )
+    })
     def test_index_flavor_list_exception(self):
         # Mocking instances.
         databases = common.Paginated(self.databases.list())
@@ -119,6 +141,8 @@ class DatabaseTests(test.TestCase):
         api.trove.flavor_list(
             IsA(http.HttpRequest),
         ).AndRaise(self.exceptions.trove)
+        api.trove.datastore_version_list(IsA(http.HttpRequest), IsA(str)).\
+            MultipleTimes().AndReturn(self.datastore_versions.list())
 
         self.mox.ReplayAll()
 
