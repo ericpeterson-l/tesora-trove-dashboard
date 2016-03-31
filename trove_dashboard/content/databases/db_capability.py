@@ -14,6 +14,7 @@
 
 
 CASSANDRA = "cassandra"
+DSE = "dse"
 MARIA = "maria"
 MONGODB = "mongodb"
 MYSQL = "mysql"
@@ -32,6 +33,10 @@ _cluster_grow_shrink_capable_datastores = (CASSANDRA, MARIA, MONGODB, REDIS)
 def can_modify_cluster(datastore):
     return _is_datastore_in_list(datastore,
                                  _cluster_grow_shrink_capable_datastores)
+
+
+def is_datastax_enterprise(datastore):
+    return (datastore is not None) and (DSE in datastore.lower())
 
 
 def is_mongodb_datastore(datastore):
