@@ -175,7 +175,7 @@ class DatabaseTests(test.TestCase):
         api.trove.flavor_list(IsA(http.HttpRequest)).AndRaise(trove_exception)
         self.mox.ReplayAll()
 
-        toSuppress = ["openstack_dashboard.dashboards.project.databases."
+        toSuppress = ["trove_dashboard.content.databases."
                       "workflows.create_instance",
                       "horizon.workflows.base"]
 
@@ -253,7 +253,8 @@ class DatabaseTests(test.TestCase):
             users=None,
             nics=nics,
             replica_count=None,
-            volume_type=None).AndReturn(self.databases.first())
+            volume_type=None,
+            locality=None).AndReturn(self.databases.first())
 
         self.mox.ReplayAll()
         post = {
@@ -328,7 +329,8 @@ class DatabaseTests(test.TestCase):
             users=None,
             nics=nics,
             replica_count=None,
-            volume_type=None).AndRaise(trove_exception)
+            volume_type=None,
+            locality=None).AndRaise(trove_exception)
 
         self.mox.ReplayAll()
         post = {
@@ -345,28 +347,53 @@ class DatabaseTests(test.TestCase):
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
     @test.create_stubs(
-        {api.trove: ('instance_get', 'flavor_get',)})
-    def _test_details(self, database, with_designate=False):
+        {api.trove: ('instance_get', 'flavor_get', 'root_show')})
+    def _test_details(self, database, test_text, assert_contains=True):
         api.trove.instance_get(IsA(http.HttpRequest), IsA(six.text_type))\
             .AndReturn(database)
         api.trove.flavor_get(IsA(http.HttpRequest), IsA(str))\
             .AndReturn(self.flavors.first())
+        api.trove.root_show(IsA(http.HttpRequest), IsA(str)) \
+            .AndReturn(self.database_user_roots.first())
 
         self.mox.ReplayAll()
-        res = self.client.get(DETAILS_URL)
-        self.assertTemplateUsed(res, 'horizon/common/_detail.html')
-        if with_designate:
-            self.assertContains(res, database.hostname)
-        else:
-            self.assertContains(res, database.ip[0])
+
+        # Suppress expected log messages in the test output
+        loggers = []
+        toSuppress = ["trove_dashboard.content.databases.tabs",
+                      "horizon.tables", ]
+        for cls in toSuppress:
+            logger = logging.getLogger(cls)
+            loggers.append((logger, logger.getEffectiveLevel()))
+            logger.setLevel(logging.CRITICAL)
+        try:
+            res = self.client.get(DETAILS_URL)
+            self.assertTemplateUsed(res, 'project/databases/'
+                                         '_detail_overview.html')
+            if assert_contains:
+                self.assertContains(res, test_text)
+            else:
+                self.assertNotContains(res, test_text)
+        finally:
+            # Restore the previous log levels
+            for (log, level) in loggers:
+                log.setLevel(level)
 
     def test_details_with_ip(self):
         database = self.databases.first()
-        self._test_details(database, with_designate=False)
+        self._test_details(database, database.ip[0])
 
     def test_details_with_hostname(self):
         database = self.databases.list()[1]
-        self._test_details(database, with_designate=True)
+        self._test_details(database, database.hostname)
+
+    def test_details_without_locality(self):
+        database = self.databases.list()[1]
+        self._test_details(database, "Locality", assert_contains=False)
+
+    def test_details_with_locality(self):
+        database = self.databases.first()
+        self._test_details(database, "Locality")
 
     def test_create_database(self):
         database = self.databases.first()
@@ -1029,7 +1056,8 @@ class DatabaseTests(test.TestCase):
             users=None,
             nics=nics,
             replica_count=2,
-            volume_type=None).AndReturn(self.databases.first())
+            volume_type=None,
+            locality=None).AndReturn(self.databases.first())
 
         self.mox.ReplayAll()
         post = {
