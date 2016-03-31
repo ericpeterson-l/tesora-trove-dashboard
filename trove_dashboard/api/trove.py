@@ -301,6 +301,10 @@ def datastore_version_list(request, datastore):
     return troveclient(request).datastore_versions.list(datastore)
 
 
+def datastore_get(request, datastore_id):
+    return troveclient(request).datastores.get(datastore_id)
+
+
 def instance_attach_configuration(request, instance_id, configuration):
     return troveclient(request).instances.modify(instance_id,
                                                  configuration=configuration)
