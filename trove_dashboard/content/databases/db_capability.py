@@ -14,6 +14,7 @@
 
 
 CASSANDRA = "cassandra"
+COUCHBASE = "couchbase"
 DSE = "dse"
 MARIA = "maria"
 MONGODB = "mongodb"
@@ -25,8 +26,8 @@ VERTICA = "vertica"
 
 
 _mysql_compatible_datastores = (MYSQL, MARIA, PERCONA, PERCONA_CLUSTER)
-_cluster_capable_datastores = (CASSANDRA, MARIA, MONGODB, PERCONA_CLUSTER,
-                               REDIS, VERTICA)
+_cluster_capable_datastores = (CASSANDRA, COUCHBASE, MARIA, MONGODB,
+                               PERCONA_CLUSTER, REDIS, VERTICA)
 _cluster_grow_shrink_capable_datastores = (CASSANDRA, MARIA, MONGODB, REDIS)
 
 
