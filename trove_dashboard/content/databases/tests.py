@@ -620,9 +620,10 @@ class DatabaseTests(test.TestCase):
         self.assertEqual(table.data[0].enabled, True)
         self.assertEqual(table.data[0].password, "password")
 
-    @test.create_stubs(
-        {api.trove: ('instance_get', 'flavor_get', 'users_list',
-                     'user_list_access', 'user_delete')})
+    @test.create_stubs({
+        api.trove: ('instance_get', 'flavor_get', 'user_delete', 'users_list',
+                    'user_list_access')
+        })
     def test_user_delete(self):
         database = self.databases.first()
         user = self.database_users.first()
@@ -640,15 +641,16 @@ class DatabaseTests(test.TestCase):
 
         # tabs.py: UserTab.get_user_data
         api.trove.users_list(IsA(http.HttpRequest),
-                             database_id).AndReturn([user])
+                             IsA(str)).AndReturn([user])
         api.trove.user_list_access(IsA(http.HttpRequest),
-                                   database_id,
-                                   user_id).AndReturn([user_db])
+                                   IsA(str),
+                                   IsA(str),
+                                   host=IsA(str)).AndReturn([user_db])
 
         # tables.py: DeleteUser.delete
         api.trove.user_delete(IsA(http.HttpRequest),
-                              database_id,
-                              user_id).AndReturn(None)
+                              IsA(six.text_type),
+                              IsA(six.text_type)).AndReturn(None)
 
         self.mox.ReplayAll()
 
@@ -722,18 +724,19 @@ class DatabaseTests(test.TestCase):
         user = self.users.first()
 
         api.trove.user_update_attributes(
-            IsA(http.HttpRequest), database.id, user.name, host=u'',
-            new_name=u'new_name', new_password=u'new_password',
-            new_host=u'127.0.0.1')
+            IsA(http.HttpRequest), IsA(six.text_type), IsA(six.text_type),
+            host=IsA(six.text_type), new_name=IsA(six.text_type),
+            new_password=IsA(six.text_type), new_host=IsA(six.text_type))
 
         self.mox.ReplayAll()
 
         url = reverse('horizon:project:databases:edit_user',
-                      args=[database.id, user.name])
+                      args=[database.id, user.name, '%'])
         post = {
             'method': 'EditUserForm',
             'instance_id': database.id,
             'user_name': user.name,
+            'user_host': '%',
             'new_name': 'new_name',
             'new_password': 'new_password',
             'new_host': '127.0.0.1'}
@@ -748,19 +751,19 @@ class DatabaseTests(test.TestCase):
         user = self.users.first()
 
         api.trove.user_update_attributes(
-            IsA(http.HttpRequest), database.id, user.name, host=u'',
-            new_name=u'new_name', new_password=u'new_password',
-            new_host=u'127.0.0.1') \
-            .AndRaise(self.exceptions.trove)
+            IsA(http.HttpRequest), IsA(six.text_type), IsA(six.text_type),
+            host=IsA(six.text_type), new_name=IsA(six.text_type),
+            new_password=IsA(six.text_type), new_host=IsA(six.text_type))
 
         self.mox.ReplayAll()
 
         url = reverse('horizon:project:databases:edit_user',
-                      args=[database.id, user.name])
+                      args=[database.id, user.name, '%'])
         post = {
             'method': 'EditUserForm',
             'instance_id': database.id,
             'user_name': user.name,
+            'user_host': '%',
             'new_name': 'new_name',
             'new_password': 'new_password',
             'new_host': '127.0.0.1'}
@@ -773,60 +776,67 @@ class DatabaseTests(test.TestCase):
         user = self.users.first()
 
         url = reverse('horizon:project:databases:edit_user',
-                      args=[database.id, user.name])
+                      args=[database.id, user.name, '%'])
         post = {
             'method': 'EditUserForm',
             'instance_id': database.id,
-            'user_name': user.name}
+            'user_name': user.name,
+            'user_host': '%',
+        }
         res = self.client.post(url, post)
 
         msg = forms.EditUserForm.validation_error_message
         self.assertFormError(res, "form", None, [msg])
 
-    @test.create_stubs({api.trove: ('database_list', 'user_list_access')})
+    @test.create_stubs({api.trove: ('database_list', 'user_show_access')})
     def test_access_detail_get(self):
-        api.trove.database_list(IsA(http.HttpRequest), u'id') \
+        api.trove.database_list(IsA(http.HttpRequest), IsA(six.text_type)) \
             .AndReturn(self.databases.list())
 
-        api.trove.user_list_access(IsA(http.HttpRequest), u'id', u'name') \
+        api.trove.user_show_access(IsA(http.HttpRequest), IsA(six.text_type),
+                                   IsA(six.text_type),
+                                   host=IsA(six.text_type)) \
             .AndReturn(self.databases.list())
 
         self.mox.ReplayAll()
 
         url = reverse('horizon:project:databases:access_detail',
-                      args=['id', 'name'])
+                      args=['id', 'name', 'host'])
         res = self.client.get(url)
         self.assertTemplateUsed(
             res, 'project/databases/access_detail.html')
 
-    @test.create_stubs({api.trove: ('database_list', 'user_list_access')})
+    @test.create_stubs({api.trove: ('database_list', 'user_show_access')})
     def test_access_detail_get_exception(self):
-        api.trove.database_list(IsA(http.HttpRequest), u'id') \
+        api.trove.database_list(IsA(http.HttpRequest), IsA(six.text_type)) \
             .AndReturn(self.databases.list())
 
-        api.trove.user_list_access(IsA(http.HttpRequest), u'id', u'name') \
+        api.trove.user_show_access(IsA(http.HttpRequest), IsA(six.text_type),
+                                   IsA(six.text_type),
+                                   host=IsA(six.text_type)) \
             .AndRaise(self.exceptions.trove)
 
         self.mox.ReplayAll()
 
         url = reverse('horizon:project:databases:access_detail',
-                      args=['id', 'name'])
+                      args=['id', 'name', 'host'])
         res = self.client.get(url)
         self.assertRedirectsNoFollow(res, DETAILS_URL)
 
     @test.create_stubs({api.trove: ('user_grant_access',)})
     def test_detail_grant_access(self):
         api.trove.user_grant_access(
-            IsA(http.HttpRequest), u'id', u'name', [u'db1'], None)
+            IsA(http.HttpRequest), IsA(six.text_type), IsA(six.text_type),
+            [IsA(six.text_type)], host=IsA(six.text_type))
 
         self.mox.ReplayAll()
 
         url = reverse('horizon:project:databases:access_detail',
-                      args=['id', 'name'])
+                      args=['id', 'name', 'host'])
         form_data = {"action": "access__grant_access__%s" % 'db1'}
         req = self.factory.post(url, form_data)
 
-        kwargs = {'instance_id': 'id', 'user_name': 'name'}
+        kwargs = {'instance_id': 'id', 'user_name': 'name', 'user_host': '%'}
 
         db_access_list = []
         db_access = views.DBAccess('db1', False)
@@ -841,17 +851,18 @@ class DatabaseTests(test.TestCase):
     @test.create_stubs({api.trove: ('user_grant_access',)})
     def test_detail_grant_access_exception(self):
         api.trove.user_grant_access(
-            IsA(http.HttpRequest), u'id', u'name', [u'db1'], None) \
+            IsA(http.HttpRequest), IsA(six.text_type), IsA(six.text_type),
+            [IsA(six.text_type)], host=IsA(six.text_type)) \
             .AndRaise(self.exceptions.trove)
 
         self.mox.ReplayAll()
 
         url = reverse('horizon:project:databases:access_detail',
-                      args=['id', 'name'])
+                      args=['id', 'name', 'host'])
         form_data = {"action": "access__grant_access__%s" % 'db1'}
         req = self.factory.post(url, form_data)
 
-        kwargs = {'instance_id': 'id', 'user_name': 'name'}
+        kwargs = {'instance_id': 'id', 'user_name': 'name', 'user_host': '%'}
 
         db_access_list = []
         db_access = views.DBAccess('db1', False)
@@ -865,17 +876,18 @@ class DatabaseTests(test.TestCase):
 
     @test.create_stubs({api.trove: ('user_revoke_access',)})
     def test_detail_revoke_access(self):
-
         api.trove.user_revoke_access(
-            IsA(http.HttpRequest), u'id', u'name', u'db1', None)
+            IsA(http.HttpRequest), IsA(six.text_type), IsA(six.text_type),
+            [IsA(six.text_type)], host=IsA(six.text_type))
+
         self.mox.ReplayAll()
 
         url = reverse('horizon:project:databases:access_detail',
-                      args=['id', 'name'])
+                      args=['id', 'name', 'host'])
         form_data = {"action": "access__revoke_access__%s" % 'db1'}
         req = self.factory.post(url, form_data)
 
-        kwargs = {'instance_id': 'id', 'user_name': 'name'}
+        kwargs = {'instance_id': 'id', 'user_name': 'name', 'user_host': '%'}
 
         db_access_list = []
         db_access = views.DBAccess('db1', True)
@@ -889,18 +901,19 @@ class DatabaseTests(test.TestCase):
 
     @test.create_stubs({api.trove: ('user_revoke_access',)})
     def test_detail_revoke_access_exception(self):
-
         api.trove.user_revoke_access(
-            IsA(http.HttpRequest), u'id', u'name', u'db1', None) \
+            IsA(http.HttpRequest), IsA(six.text_type), IsA(six.text_type),
+            [IsA(six.text_type)], host=IsA(six.text_type)) \
             .AndRaise(self.exceptions.trove)
+
         self.mox.ReplayAll()
 
         url = reverse('horizon:project:databases:access_detail',
-                      args=['id', 'name'])
+                      args=['id', 'name', 'host'])
         form_data = {"action": "access__revoke_access__%s" % 'db1'}
         req = self.factory.post(url, form_data)
 
-        kwargs = {'instance_id': 'id', 'user_name': 'name'}
+        kwargs = {'instance_id': 'id', 'user_name': 'name', 'user_host': '%'}
 
         db_access_list = []
         db_access = views.DBAccess('db1', True)
