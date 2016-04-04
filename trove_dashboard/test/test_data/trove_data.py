@@ -21,6 +21,7 @@ from troveclient.v1 import datastores
 from troveclient.v1 import flavors
 from troveclient.v1 import instances
 from troveclient.v1 import users
+from troveclient.v1 import volume_types
 
 from openstack_dashboard.test.test_data import utils
 
@@ -411,6 +412,18 @@ FLAVOR_THREE = {
     "name": "test.1"
 }
 
+VOLUME_TYPE_ONE = {
+    "id": "1",
+    "name": "vol_type_1",
+    "description": "type 1 description",
+}
+
+VOLUME_TYPE_TWO = {
+    "id": "2",
+    "name": "vol_type_2",
+    "description": "type 2 description",
+}
+
 VERSION_MONGODB_2_6 = {
     "name": "2.6",
     "links": [],
@@ -516,6 +529,12 @@ def data(TEST):
     flavor1 = flavors.Flavor(flavors.Flavors(None), FLAVOR_ONE)
     flavor2 = flavors.Flavor(flavors.Flavors(None), FLAVOR_TWO)
     flavor3 = flavors.Flavor(flavors.Flavors(None), FLAVOR_THREE)
+
+    volume_type1 = volume_types.VolumeType(volume_types.VolumeTypes(None),
+                                           VOLUME_TYPE_ONE)
+    volume_type2 = volume_types.VolumeType(volume_types.VolumeTypes(None),
+                                           VOLUME_TYPE_TWO)
+
     datastore_mongodb = datastores.Datastore(datastores.Datastores(None),
                                              DATASTORE_MONGODB)
     version_mongodb_2_6 = datastores.\
@@ -547,6 +566,7 @@ def data(TEST):
     TEST.database_user_dbs = utils.TestDataContainer()
     TEST.database_user_roots = utils.TestDataContainer()
     TEST.database_flavors = utils.TestDataContainer()
+    TEST.database_volume_types = utils.TestDataContainer()
 
     TEST.databases.add(database1)
     TEST.databases.add(database2)
@@ -578,6 +598,7 @@ def data(TEST):
     TEST.datastores.add(datastore_vertica)
     TEST.datastores.add(datastore1)
     TEST.database_flavors.add(flavor1, flavor2, flavor3)
+    TEST.database_volume_types.add(volume_type1, volume_type2)
     TEST.datastore_versions = utils.TestDataContainer()
     TEST.datastore_versions.add(version_vertica_7_1)
     TEST.datastore_versions.add(version_redis_3_0)

@@ -28,6 +28,7 @@ from openstack_dashboard.dashboards.project.instances \
     import utils as instance_utils
 
 from trove_dashboard import api
+from trove_dashboard.content import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -45,10 +46,6 @@ class SetInstanceDetailsAction(workflows.Action):
                                 min_value=0,
                                 initial=1,
                                 help_text=_("Size of the volume in GB."))
-    volume_type = forms.ChoiceField(
-        label=_("Volume Type"),
-        required=False,
-        help_text=_("Applicable only if the volume size is specified."))
     datastore = forms.ChoiceField(
         label=_("Datastore"),
         help_text=_("Type and version of datastore."),
@@ -124,15 +121,18 @@ class SetInstanceDetailsAction(workflows.Action):
                               redirect=redirect)
 
     @memoized.memoized_method
-    def populate_volume_type_choices(self, request, context):
+    def datastore_volume_types(self, request, datastore_name,
+                               datastore_version):
         try:
-            volume_types = dash_api.cinder.volume_type_list(request)
-            return ([("no_type", _("No volume type"))] +
-                    [(type.name, type.name)
-                     for type in volume_types])
+            return api.trove.datastore_volume_types(
+                request, datastore_name, datastore_version)
         except Exception:
             LOG.exception("Exception while obtaining volume types list")
             self._volume_types = []
+            redirect = reverse('horizon:project:databases:index')
+            exceptions.handle(request,
+                              _('Unable to obtain volume types.'),
+                              redirect=redirect)
 
     @memoized.memoized_method
     def datastores(self, request):
@@ -171,6 +171,9 @@ class SetInstanceDetailsAction(workflows.Action):
                         self._add_datastore_flavor_field(request,
                                                          ds.name,
                                                          v.name)
+                        self._add_datastore_volume_type_field(request,
+                                                              ds.name,
+                                                              v.name)
                     choices = choices + version_choices
         return choices
 
@@ -198,6 +201,30 @@ class SetInstanceDetailsAction(workflows.Action):
             self.fields[field_name].choices = instance_utils.sort_flavor_list(
                 request, valid_flavors)
 
+    def _add_datastore_volume_type_field(self,
+                                         request,
+                                         datastore,
+                                         datastore_version):
+        name = self._build_widget_field_name(datastore, datastore_version)
+        attr_key = 'data-datastore-' + name
+        field_name = self._build_volume_type_field_name(datastore,
+                                                        datastore_version)
+        self.fields[field_name] = forms.ChoiceField(
+            label=_("Volume Type"),
+            help_text=_("Applicable only if the volume size is specified."),
+            required=False,
+            widget=forms.Select(attrs={
+                'class': 'switched',
+                'data-switch-on': 'datastore',
+                attr_key: _("Volume Type")
+            }))
+        valid_types = self.datastore_volume_types(request,
+                                                  datastore,
+                                                  datastore_version)
+        if valid_types:
+            self.fields[field_name].choices = (
+                utils.sort_volume_type_list(request, valid_types))
+
     def _build_datastore_display_text(self, datastore, datastore_version):
         return datastore + ' - ' + datastore_version
 
@@ -209,7 +236,13 @@ class SetInstanceDetailsAction(workflows.Action):
             self._build_datastore_display_text(datastore, datastore_version))
 
     def _build_flavor_field_name(self, datastore, datastore_version):
-        return self._build_widget_field_name(datastore,
+        return 'flavor-' + \
+               self._build_widget_field_name(datastore,
+                                             datastore_version)
+
+    def _build_volume_type_field_name(self, datastore, datastore_version):
+        return 'volume-type-' + \
+               self._build_widget_field_name(datastore,
                                              datastore_version)
 
 
