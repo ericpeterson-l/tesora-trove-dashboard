@@ -28,7 +28,8 @@ VERTICA = "vertica"
 _mysql_compatible_datastores = (MYSQL, MARIA, PERCONA, PERCONA_CLUSTER)
 _cluster_capable_datastores = (CASSANDRA, COUCHBASE, DSE, MARIA, MONGODB,
                                PERCONA_CLUSTER, REDIS, VERTICA)
-_cluster_grow_shrink_capable_datastores = (CASSANDRA, MARIA, MONGODB, REDIS)
+_cluster_grow_shrink_capable_datastores = (CASSANDRA, COUCHBASE, DSE, MARIA,
+                                           MONGODB, REDIS)
 
 
 def can_modify_cluster(datastore):
