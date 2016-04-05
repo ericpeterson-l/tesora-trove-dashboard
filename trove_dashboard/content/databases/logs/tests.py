@@ -48,11 +48,14 @@ class LogsTests(test.TestCase):
         return self.swiftclient
 
     @test.create_stubs({
-        api.trove: ('flavor_get', 'instance_get', 'log_list',)})
+        api.trove: ('datastore_version_list', 'flavor_get',
+                    'instance_get', 'log_list',)})
     def test_log_tab(self):
         database = self.databases.first()
         database_id = database.id
 
+        (api.trove.datastore_version_list(IsA(http.HttpRequest), IsA(str))
+            .MultipleTimes().AndReturn(self.datastore_versions.list()))
         (api.trove.instance_get(IsA(http.HttpRequest), IsA(six.text_type))
             .AndReturn(database))
         (api.trove.log_list(IsA(http.HttpRequest), database_id)
@@ -72,11 +75,14 @@ class LogsTests(test.TestCase):
             res, 'horizon/common/_detail_table.html')
 
     @test.create_stubs({
-        api.trove: ('flavor_get', 'instance_get', 'log_list',)})
+        api.trove: ('datastore_version_list', 'flavor_get',
+                    'instance_get', 'log_list',)})
     def test_log_tab_exception(self):
         database = self.databases.first()
         database_id = database.id
 
+        (api.trove.datastore_version_list(IsA(http.HttpRequest), IsA(str))
+            .MultipleTimes().AndReturn(self.datastore_versions.list()))
         (api.trove.instance_get(IsA(http.HttpRequest), IsA(six.text_type))
             .AndReturn(database))
         (api.trove.log_list(IsA(http.HttpRequest), database_id)

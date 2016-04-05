@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import six.moves.urllib.parse as urlparse
-
 from django.conf import settings
 from django.core import urlresolvers
 from django.template import defaultfilters as d_filters
@@ -233,16 +231,6 @@ class RevokeAccess(tables.BatchAction):
             self.table.kwargs['user_name'],
             obj_id,
             host=self.table.kwargs['user_host'])
-
-
-def parse_host_param(request):
-    host = None
-    if request.META.get('QUERY_STRING', ''):
-        param = urlparse.parse_qs(request.META.get('QUERY_STRING'))
-        values = param.get('host')
-        if values:
-            host = next(iter(values), None)
-    return host
 
 
 class AccessTable(tables.DataTable):

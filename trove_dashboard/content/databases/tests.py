@@ -708,7 +708,6 @@ class DatabaseTests(test.TestCase):
         api.trove.user_create(
             IsA(http.HttpRequest), u'id', u'name', u'password',
             host=u'', databases=[]).AndRaise(self.exceptions.trove)
-
         self.mox.ReplayAll()
 
         url = reverse('horizon:project:databases:create_user',

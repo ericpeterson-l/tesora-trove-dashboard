@@ -61,6 +61,9 @@ class OverviewTab(tabs.Tab):
     def _get_template_type(self, datastore):
         if db_capability.is_mysql_compatible(datastore):
             return 'mysql'
+        elif (db_capability.is_oracle_datastore(datastore) or
+              db_capability.is_oracle_ra_datastore(datastore)):
+            return 'oracle'
         elif db_capability.is_datastax_enterprise(datastore):
             return 'cassandra'
 
@@ -163,7 +166,14 @@ class BackupsTab(tabs.TableTab):
         return data
 
     def allowed(self, request):
-        return request.user.has_perm('openstack.services.object-store')
+        return (request.user.has_perm('openstack.services.object-store') and
+                self._has_backup_capability(self.tab_group.kwargs))
+
+    def _has_backup_capability(self, kwargs):
+        instance = kwargs['instance']
+        if (instance is not None):
+            return db_capability.can_backup(instance.datastore['type'])
+        return True
 
 
 class LogsTab(tabs.TableTab):

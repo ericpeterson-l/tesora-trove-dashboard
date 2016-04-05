@@ -28,6 +28,7 @@ from openstack_dashboard.dashboards.project.instances \
     import utils as instance_utils
 
 from trove_dashboard import api
+from trove_dashboard.content.databases import db_capability
 from trove_dashboard.content import utils
 
 LOG = logging.getLogger(__name__)
@@ -342,10 +343,13 @@ class AddDatabasesAction(workflows.Action):
             if not cleaned_data.get('password'):
                 msg = _('You must specify a password if you create a user.')
                 self._errors["password"] = self.error_class([msg])
-            if not cleaned_data.get('databases'):
-                msg = _('You must specify at least one database if '
-                        'you create a user.')
-                self._errors["databases"] = self.error_class([msg])
+            datastore, datastore_version = parse_datastore_and_version_text(
+                binascii.unhexlify(self.data[u'datastore']))
+            if db_capability.db_required_when_creating_user(datastore):
+                if not cleaned_data.get('databases'):
+                    msg = _('You must specify at least one database if '
+                            'you create a user.')
+                    self._errors["databases"] = self.error_class([msg])
         return cleaned_data
 
 
@@ -472,6 +476,9 @@ class AdvancedAction(workflows.Action):
     def clean(self):
         cleaned_data = super(AdvancedAction, self).clean()
 
+        datastore, datastore_version = parse_datastore_and_version_text(
+            binascii.unhexlify(self.data[u'datastore']))
+
         config = self.cleaned_data['config']
         if config:
             try:
@@ -483,36 +490,50 @@ class AdvancedAction(workflows.Action):
                 raise forms.ValidationError(_("Unable to find configuration "
                                               "group!"))
         else:
-            self.cleaned_data['config'] = None
+            if db_capability.require_configuration_group(datastore):
+                msg = _('This datastore requires a configuration group.')
+                self._errors["config"] = self.error_class([msg])
 
         initial_state = cleaned_data.get("initial_state")
 
         if initial_state == 'backup':
             cleaned_data['replica_count'] = None
-            backup = self.cleaned_data['backup']
-            if backup:
-                try:
-                    bkup = api.trove.backup_get(self.request, backup)
-                    self.cleaned_data['backup'] = bkup.id
-                except Exception:
-                    raise forms.ValidationError(_("Unable to find backup!"))
+            if not db_capability.can_backup(datastore):
+                msg = _('You cannot specify a backup for the initial state '
+                        'for this datastore.')
+                self._errors["initial_state"] = self.error_class([msg])
             else:
-                raise forms.ValidationError(_("A backup must be selected!"))
+                backup = self.cleaned_data['backup']
+                if backup:
+                    try:
+                        bkup = api.trove.backup_get(self.request, backup)
+                        self.cleaned_data['backup'] = bkup.id
+                    except Exception:
+                        raise forms.ValidationError(
+                            _("Unable to find backup!"))
+                else:
+                    raise forms.ValidationError(
+                        _("A backup must be selected!"))
 
             cleaned_data['master'] = None
         elif initial_state == 'master':
-            master = self.cleaned_data['master']
-            if master:
-                try:
-                    api.trove.instance_get(self.request, master)
-                except Exception:
-                    raise forms.ValidationError(
-                        _("Unable to find master instance!"))
+            if not db_capability.can_launch_from_master(datastore):
+                msg = _('You cannot specify a master for the initial state '
+                        'for this datastore.')
+                self._errors["initial_state"] = self.error_class([msg])
             else:
-                raise forms.ValidationError(
-                    _("A master instance must be selected!"))
+                master = self.cleaned_data['master']
+                if master:
+                    try:
+                        api.trove.instance_get(self.request, master)
+                    except Exception:
+                        raise forms.ValidationError(
+                            _("Unable to find master instance!"))
+                else:
+                    raise forms.ValidationError(
+                        _("A master instance must be selected!"))
 
-            cleaned_data['backup'] = None
+                cleaned_data['backup'] = None
         else:
             cleaned_data['master'] = None
             cleaned_data['backup'] = None
@@ -584,6 +605,12 @@ class LaunchInstance(workflows.Workflow):
         else:
             return None
 
+    def _get_config(self, context):
+        config = None
+        if context.get('config'):
+            config = context['config']
+        return config
+
     def _get_volume_type(self, context):
         volume_type = None
         if context.get('volume_type') != 'no_type':
@@ -616,7 +643,7 @@ class LaunchInstance(workflows.Workflow):
                      self._get_databases(context), self._get_users(context),
                      self._get_backup(context), self._get_nics(context),
                      context.get('master'), context['replica_count'],
-                     context.get('config'), self._get_locality(context))
+                     self._get_config(context), self._get_locality(context))
             api.trove.instance_create(request,
                                       context['name'],
                                       context['volume'],
@@ -631,7 +658,7 @@ class LaunchInstance(workflows.Workflow):
                                       replica_count=context['replica_count'],
                                       volume_type=self._get_volume_type(
                                           context),
-                                      configuration=context.get('config'),
+                                      configuration=self._get_config(context),
                                       locality=self._get_locality(context))
             return True
         except Exception:

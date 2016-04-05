@@ -19,11 +19,12 @@ DSE = "dse"
 MARIA = "maria"
 MONGODB = "mongodb"
 MYSQL = "mysql"
+ORACLE = "oracle"
+ORACLE_RA = "oracle_ra"
 PERCONA = "percona"
 PERCONA_CLUSTER = "pxc"
 REDIS = "redis"
 VERTICA = "vertica"
-
 
 _mysql_compatible_datastores = (MYSQL, MARIA, PERCONA, PERCONA_CLUSTER)
 _cluster_capable_datastores = (CASSANDRA, COUCHBASE, DSE, MARIA, MONGODB,
@@ -32,9 +33,31 @@ _cluster_grow_shrink_capable_datastores = (CASSANDRA, COUCHBASE, DSE, MARIA,
                                            MONGODB, REDIS)
 
 
+def can_backup(datastore):
+    if is_oracle_ra_datastore(datastore):
+        return False
+    return True
+
+
+def can_launch_from_master(datastore):
+    if is_oracle_ra_datastore(datastore):
+        return False
+    return True
+
+
 def can_modify_cluster(datastore):
     return _is_datastore_in_list(datastore,
                                  _cluster_grow_shrink_capable_datastores)
+
+
+def db_required_when_creating_user(datastore):
+    if is_oracle_ra_datastore(datastore):
+        return False
+    return True
+
+
+def is_cluster_capable_datastore(datastore):
+    return _is_datastore_in_list(datastore, _cluster_capable_datastores)
 
 
 def is_datastax_enterprise(datastore):
@@ -43,6 +66,14 @@ def is_datastax_enterprise(datastore):
 
 def is_mongodb_datastore(datastore):
     return (datastore is not None) and (MONGODB in datastore.lower())
+
+
+def is_mysql_compatible(datastore):
+    return _is_datastore_in_list(datastore, _mysql_compatible_datastores)
+
+
+def is_oracle_ra_datastore(datastore):
+    return (datastore is not None) and (ORACLE_RA in datastore.lower())
 
 
 def is_percona_cluster_datastore(datastore):
@@ -57,12 +88,10 @@ def is_vertica_datastore(datastore):
     return (datastore is not None) and (VERTICA in datastore.lower())
 
 
-def is_mysql_compatible(datastore):
-    return _is_datastore_in_list(datastore, _mysql_compatible_datastores)
-
-
-def is_cluster_capable_datastore(datastore):
-    return _is_datastore_in_list(datastore, _cluster_capable_datastores)
+def require_configuration_group(datastore):
+    if is_oracle_ra_datastore(datastore):
+        return True
+    return False
 
 
 def _is_datastore_in_list(datastore, datastores):

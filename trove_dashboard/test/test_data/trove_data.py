@@ -230,6 +230,10 @@ BACKUP_ONE = {
     "size": 0.13,
     "id": "0edb3c14-8919-4583-9add-00df9e524081",
     "description": "Long description of backup",
+    "datastore": {
+        "type": "mysql",
+        "version": "5.6"
+    },
 }
 
 BACKUP_TWO = {
@@ -242,6 +246,10 @@ BACKUP_TWO = {
     "size": 0.13,
     "id": "e4602a3c-2bca-478f-b059-b6c215510fb4",
     "description": "Longer description of backup",
+    "datastore": {
+        "type": "mysql",
+        "version": "5.6"
+    },
 }
 
 BACKUP_TWO_INC = {
@@ -255,6 +263,10 @@ BACKUP_TWO_INC = {
     "id": "e4602a3c-2bca-478f-b059-b6c215510fb5",
     "description": "Longer description of backup",
     "parent_id": "e4602a3c-2bca-478f-b059-b6c215510fb4",
+    "datastore": {
+        "type": "mysql",
+        "version": "5.6"
+    },
 }
 
 CONFIG_ONE = {
