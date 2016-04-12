@@ -14,7 +14,6 @@
 # under the License.
 
 import binascii
-import collections
 import logging
 import uuid
 
@@ -290,20 +289,19 @@ class LaunchForm(forms.SelfHandlingForm):
             self._build_datastore_display_text(datastore, datastore_version))
 
     def _insert_datastore_version_fields(self, datastore_flavor_fields):
-        fields_to_restore_at_the_end = collections.OrderedDict()
-        while True:
-            k, v = self.fields.popitem()
-            if k == 'datastore':
-                self.fields[k] = v
+        datastore_index = None
+        reordered_fields = self.fields.items()
+        for tup in reordered_fields:
+            if tup[0] == 'datastore':
+                datastore_index = reordered_fields.index(tup)
                 break
-            else:
-                fields_to_restore_at_the_end[k] = v
 
         for k, v in datastore_flavor_fields.iteritems():
-            self.fields[k] = v
+            reordered_fields.insert(datastore_index + 1, (k, v))
 
-        for k in reversed(fields_to_restore_at_the_end.keys()):
-            self.fields[k] = fields_to_restore_at_the_end[k]
+        self.fields.clear()
+        for tup in reordered_fields:
+            self.fields[tup[0]] = tup[1]
 
     def _add_attr_to_optional_fields(self, datastore, selection_text):
         if db_capability.is_mongodb_datastore(datastore):
