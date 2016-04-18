@@ -38,6 +38,7 @@ from trove_dashboard.content.databases import forms
 from trove_dashboard.content.databases import tables
 from trove_dashboard.content.databases import tabs
 from trove_dashboard.content.databases import workflows
+from trove_dashboard.templatetags.tesora import tesora_version
 
 LOG = logging.getLogger(__name__)
 
@@ -46,6 +47,16 @@ class IndexView(horizon_tables.DataTableView):
     table_class = tables.InstancesTable
     template_name = 'project/databases/index.html'
     page_title = _("Instances")
+
+    def get_context_data(self, **kwargs):
+        context = super(IndexView, self).get_context_data(**kwargs)
+        try:
+            context["version"] = tesora_version()
+        except Exception:
+            exceptions.handle(self.request,
+                              _('Unable to retrieve version information.'))
+
+        return context
 
     def has_more_data(self, table):
         return self._more
