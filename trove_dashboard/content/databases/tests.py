@@ -156,7 +156,9 @@ class DatabaseTests(test.TestCase):
                     'backup_list', 'datastore_list', 'datastore_version_list',
                     'instance_list'),
         dash_api.cinder: ('volume_type_list',),
-        dash_api.neutron: ('network_list',)})
+        dash_api.neutron: ('network_list',),
+        dash_api.nova: ('availability_zone_list',)
+    })
     def test_launch_instance(self):
         api.trove.datastore_flavors(IsA(http.HttpRequest),
                                     IsA(six.string_types),
@@ -185,6 +187,9 @@ class DatabaseTests(test.TestCase):
         dash_api.neutron.network_list(IsA(http.HttpRequest),
                                       shared=True).AndReturn(
                                           self.networks.list()[1:])
+
+        dash_api.nova.availability_zone_list(IsA(http.HttpRequest)) \
+            .AndReturn(self.availability_zones.list())
 
         self.mox.ReplayAll()
         res = self.client.get(LAUNCH_URL)
@@ -226,7 +231,9 @@ class DatabaseTests(test.TestCase):
                     'backup_list', 'instance_create',
                     'datastore_list', 'datastore_version_list',
                     'instance_list'),
-        dash_api.neutron: ('network_list',)})
+        dash_api.neutron: ('network_list',),
+        dash_api.nova: ('availability_zone_list',)
+    })
     def test_create_simple_instance(self):
         api.trove.datastore_flavors(IsA(http.HttpRequest),
                                     IsA(six.string_types),
@@ -262,6 +269,9 @@ class DatabaseTests(test.TestCase):
 
         nics = [{"net-id": self.networks.first().id, "v4-fixed-ip": ''}]
 
+        dash_api.nova.availability_zone_list(IsA(http.HttpRequest)) \
+            .AndReturn(self.availability_zones.list())
+
         datastore = 'mysql'
         datastore_version = '5.5'
         field_name = self._build_flavor_widget_name(datastore,
@@ -282,7 +292,9 @@ class DatabaseTests(test.TestCase):
             nics=nics,
             replica_count=None,
             volume_type=None,
-            locality=None).AndReturn(self.databases.first())
+            locality=None,
+            availability_zone=IsA(six.text_type)
+        ).AndReturn(self.databases.first())
 
         self.mox.ReplayAll()
         post = {
@@ -302,7 +314,9 @@ class DatabaseTests(test.TestCase):
                     'backup_list', 'instance_create',
                     'datastore_list', 'datastore_version_list',
                     'instance_list'),
-        dash_api.neutron: ('network_list',)})
+        dash_api.neutron: ('network_list',),
+        dash_api.nova: ('availability_zone_list',)
+    })
     def test_create_simple_instance_exception(self):
         trove_exception = self.exceptions.nova
         api.trove.datastore_flavors(IsA(http.HttpRequest),
@@ -339,6 +353,9 @@ class DatabaseTests(test.TestCase):
 
         nics = [{"net-id": self.networks.first().id, "v4-fixed-ip": ''}]
 
+        dash_api.nova.availability_zone_list(IsA(http.HttpRequest)) \
+            .AndReturn(self.availability_zones.list())
+
         datastore = 'mysql'
         datastore_version = '5.5'
         field_name = self._build_flavor_widget_name(datastore,
@@ -359,7 +376,9 @@ class DatabaseTests(test.TestCase):
             nics=nics,
             replica_count=None,
             volume_type=None,
-            locality=None).AndRaise(trove_exception)
+            locality=None,
+            availability_zone=IsA(six.text_type)
+        ).AndRaise(trove_exception)
 
         self.mox.ReplayAll()
         post = {
@@ -1041,7 +1060,9 @@ class DatabaseTests(test.TestCase):
                     'backup_list', 'instance_create',
                     'datastore_list', 'datastore_version_list',
                     'instance_list', 'instance_get'),
-        dash_api.neutron: ('network_list',)})
+        dash_api.neutron: ('network_list',),
+        dash_api.nova: ('availability_zone_list',)
+    })
     def test_create_replica_instance(self):
         api.trove.datastore_flavors(IsA(http.HttpRequest),
                                     IsA(six.string_types),
@@ -1076,6 +1097,9 @@ class DatabaseTests(test.TestCase):
 
         nics = [{"net-id": self.networks.first().id, "v4-fixed-ip": ''}]
 
+        dash_api.nova.availability_zone_list(IsA(http.HttpRequest)) \
+            .AndReturn(self.availability_zones.list())
+
         api.trove.instance_get(IsA(http.HttpRequest), IsA(six.text_type))\
             .AndReturn(self.databases.first())
 
@@ -1099,7 +1123,9 @@ class DatabaseTests(test.TestCase):
             nics=nics,
             replica_count=2,
             volume_type=None,
-            locality=None).AndReturn(self.databases.first())
+            locality=None,
+            availability_zone=IsA(six.text_type)
+        ).AndReturn(self.databases.first())
 
         self.mox.ReplayAll()
         post = {
