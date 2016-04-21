@@ -106,7 +106,14 @@ class SetInstanceDetailsAction(workflows.Action):
             flavor = self.data[field_name]
             if flavor:
                 context["flavor"] = flavor
-                return context
+
+            volume_type_field_name = self._build_volume_type_field_name(
+                datastore, datastore_version)
+            volume_type = self.data.get(volume_type_field_name, None)
+            if volume_type:
+                context["volume_type"] = volume_type
+
+            return context
         return None
 
     @memoized.memoized_method
