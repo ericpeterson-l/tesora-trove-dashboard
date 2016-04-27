@@ -154,7 +154,7 @@ class DatabaseTests(test.TestCase):
     @test.create_stubs({
         api.trove: ('datastore_flavors', 'datastore_volume_types',
                     'backup_list', 'datastore_list', 'datastore_version_list',
-                    'instance_list'),
+                    'instance_list', 'region_list'),
         dash_api.cinder: ('volume_type_list',),
         dash_api.neutron: ('network_list',),
         dash_api.nova: ('availability_zone_list',)
@@ -178,6 +178,7 @@ class DatabaseTests(test.TestCase):
         # Mock datastore versions
         api.trove.datastore_version_list(IsA(http.HttpRequest), IsA(str)).\
             MultipleTimes().AndReturn(self.datastore_versions.list())
+        api.trove.region_list(IsA(http.HttpRequest)).AndReturn([])
 
         dash_api.neutron.network_list(IsA(http.HttpRequest),
                                       tenant_id=self.tenant.id,
@@ -230,7 +231,7 @@ class DatabaseTests(test.TestCase):
         api.trove: ('datastore_flavors', 'datastore_volume_types',
                     'backup_list', 'instance_create',
                     'datastore_list', 'datastore_version_list',
-                    'instance_list'),
+                    'instance_list', 'region_list'),
         dash_api.neutron: ('network_list',),
         dash_api.nova: ('availability_zone_list',)
     })
@@ -257,6 +258,8 @@ class DatabaseTests(test.TestCase):
         # Mock datastore versions
         api.trove.datastore_version_list(IsA(http.HttpRequest), IsA(str))\
             .MultipleTimes().AndReturn(self.datastore_versions.list())
+
+        api.trove.region_list(IsA(http.HttpRequest)).AndReturn([])
 
         dash_api.neutron.network_list(IsA(http.HttpRequest),
                                       tenant_id=self.tenant.id,
@@ -293,7 +296,8 @@ class DatabaseTests(test.TestCase):
             replica_count=None,
             volume_type=None,
             locality=None,
-            availability_zone=IsA(six.text_type)
+            availability_zone=IsA(six.text_type),
+            region=None
         ).AndReturn(self.databases.first())
 
         self.mox.ReplayAll()
@@ -313,7 +317,7 @@ class DatabaseTests(test.TestCase):
         api.trove: ('datastore_flavors', 'datastore_volume_types',
                     'backup_list', 'instance_create',
                     'datastore_list', 'datastore_version_list',
-                    'instance_list'),
+                    'instance_list', 'region_list'),
         dash_api.neutron: ('network_list',),
         dash_api.nova: ('availability_zone_list',)
     })
@@ -342,6 +346,8 @@ class DatabaseTests(test.TestCase):
         api.trove.datastore_version_list(IsA(http.HttpRequest), IsA(str))\
             .MultipleTimes().AndReturn(self.datastore_versions.list())
 
+        api.trove.region_list(IsA(http.HttpRequest)).AndReturn([])
+
         dash_api.neutron.network_list(IsA(http.HttpRequest),
                                       tenant_id=self.tenant.id,
                                       shared=False).AndReturn(
@@ -377,7 +383,8 @@ class DatabaseTests(test.TestCase):
             replica_count=None,
             volume_type=None,
             locality=None,
-            availability_zone=IsA(six.text_type)
+            availability_zone=IsA(six.text_type),
+            region=None
         ).AndRaise(trove_exception)
 
         self.mox.ReplayAll()
@@ -1059,7 +1066,7 @@ class DatabaseTests(test.TestCase):
         api.trove: ('datastore_flavors', 'datastore_volume_types',
                     'backup_list', 'instance_create',
                     'datastore_list', 'datastore_version_list',
-                    'instance_list', 'instance_get'),
+                    'instance_list', 'instance_get', 'region_list'),
         dash_api.neutron: ('network_list',),
         dash_api.nova: ('availability_zone_list',)
     })
@@ -1085,6 +1092,8 @@ class DatabaseTests(test.TestCase):
         api.trove.datastore_version_list(IsA(http.HttpRequest),
                                          IsA(str))\
             .MultipleTimes().AndReturn(self.datastore_versions.list())
+
+        api.trove.region_list(IsA(http.HttpRequest)).AndReturn([])
 
         dash_api.neutron.network_list(IsA(http.HttpRequest),
                                       tenant_id=self.tenant.id,
@@ -1124,7 +1133,8 @@ class DatabaseTests(test.TestCase):
             replica_count=2,
             volume_type=None,
             locality=None,
-            availability_zone=IsA(six.text_type)
+            availability_zone=IsA(six.text_type),
+            region=None
         ).AndReturn(self.databases.first())
 
         self.mox.ReplayAll()
@@ -1356,7 +1366,7 @@ class DatabaseTests(test.TestCase):
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
     @test.create_stubs({
-        api.trove: ('instance_list',)
+        api.trove: ('instance_list', 'region_list',)
     })
     def test_master_list_pagination(self):
         request = http.HttpRequest()
@@ -1369,6 +1379,7 @@ class DatabaseTests(test.TestCase):
         (api.trove.instance_list(request, marker='marker')
          .AndReturn(second_part))
         api.trove.instance_list(request).AndReturn(first_part)
+        api.trove.region_list(request).AndReturn([])
 
         self.mox.ReplayAll()
 

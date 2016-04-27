@@ -108,10 +108,11 @@ class ClustersTests(test.TestCase):
         self.assertTemplateUsed(res, 'project/database_clusters/index.html')
         self.assertMessageCount(res, error=1)
 
-    @test.create_stubs({trove_api.trove: ('datastore_flavors',
-                                          'datastore_list',
-                                          'datastore_version_list'),
-                        api.base: ['is_service_enabled']})
+    @test.create_stubs({
+        trove_api.trove: ('datastore_flavors', 'datastore_list',
+                          'datastore_version_list', 'region_list',),
+        api.base: ('is_service_enabled',)
+    })
     def test_launch_cluster(self):
         api.base.is_service_enabled(IsA(http.HttpRequest), 'network')\
             .AndReturn(False)
@@ -125,6 +126,8 @@ class ClustersTests(test.TestCase):
                                                IsA(str))\
             .AndReturn(
                 self._get_filtered_datastore_versions(filtered_datastores))
+        trove_api.trove.region_list(IsA(http.HttpRequest))\
+            .MultipleTimes().AndReturn([])
         self.mox.ReplayAll()
         res = self.client.get(LAUNCH_URL)
         self.assertTemplateUsed(res, 'project/database_clusters/launch.html')
@@ -186,10 +189,11 @@ class ClustersTests(test.TestCase):
         self.assertTrue(self._contains_datastore_in_attribute(
             fields['num_instances_vertica'], field_name))
 
-    @test.create_stubs({trove_api.trove: ('datastore_flavors',
-                                          'datastore_list',
-                                          'datastore_version_list'),
-                        api.base: ['is_service_enabled']})
+    @test.create_stubs({
+        trove_api.trove: ('datastore_flavors', 'datastore_list',
+                          'datastore_version_list', 'region_list',),
+        api.base: ('is_service_enabled',)
+    })
     def launch_cluster_fields_setup(self, datastore, datastore_version):
         api.base.is_service_enabled(IsA(http.HttpRequest), 'network')\
             .AndReturn(False)
@@ -203,15 +207,18 @@ class ClustersTests(test.TestCase):
                                                IsA(str))\
             .AndReturn(
                 self._get_filtered_datastore_versions(filtered_datastores))
+        trove_api.trove.region_list(IsA(http.HttpRequest))\
+            .AndReturn([])
         self.mox.ReplayAll()
         res = self.client.get(LAUNCH_URL)
         return res.context_data['form'].fields
 
-    @test.create_stubs({trove_api.trove: ['datastore_flavors',
-                                          'cluster_create',
-                                          'datastore_list',
-                                          'datastore_version_list'],
-                        api.base: ['is_service_enabled']})
+    @test.create_stubs({
+        trove_api.trove: ('cluster_create', 'datastore_flavors',
+                          'datastore_list', 'datastore_version_list',
+                          'region_list',),
+        api.base: ('is_service_enabled',)
+    })
     def test_create_simple_cluster(self):
         api.base.is_service_enabled(IsA(http.HttpRequest), 'network')\
             .AndReturn(False)
@@ -225,6 +232,8 @@ class ClustersTests(test.TestCase):
                                                IsA(str))\
             .AndReturn(
                 self._get_filtered_datastore_versions(filtered_datastores))
+        trove_api.trove.region_list(IsA(http.HttpRequest))\
+            .AndReturn(self.trove_regions.list())
 
         cluster_name = u'MyCluster'
         cluster_volume = 1
@@ -243,7 +252,9 @@ class ClustersTests(test.TestCase):
             datastore_version=cluster_datastore_version,
             nics=cluster_network,
             root_password=None,
-            locality=None).AndReturn(self.trove_clusters.first())
+            locality=None,
+            region=self.trove_regions.first().id
+        ).AndReturn(self.trove_clusters.first())
 
         field_name = self._build_flavor_widget_name(cluster_datastore,
                                                     cluster_datastore_version)
@@ -255,18 +266,20 @@ class ClustersTests(test.TestCase):
             'num_shards': 1,
             'datastore': field_name,
             field_name: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'region': self.trove_regions.first().id
         }
 
         res = self.client.post(LAUNCH_URL, post)
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=1)
 
-    @test.create_stubs({trove_api.trove: ['datastore_flavors',
-                                          'cluster_create',
-                                          'datastore_list',
-                                          'datastore_version_list'],
-                        api.neutron: ['network_list_for_tenant'],
-                        api.base: ['is_service_enabled']})
+    @test.create_stubs({
+        trove_api.trove: ('cluster_create', 'datastore_flavors',
+                          'datastore_list', 'datastore_version_list',
+                          'region_list',),
+        api.neutron: ('network_list_for_tenant',),
+        api.base: ('is_service_enabled',)
+    })
     def test_create_simple_cluster_neutron(self):
         api.base.is_service_enabled(IsA(http.HttpRequest), 'network')\
             .AndReturn(True)
@@ -282,6 +295,8 @@ class ClustersTests(test.TestCase):
                                                IsA(str))\
             .AndReturn(
                 self._get_filtered_datastore_versions(filtered_datastores))
+        trove_api.trove.region_list(IsA(http.HttpRequest))\
+            .AndReturn(self.trove_regions.list())
 
         cluster_name = u'MyCluster'
         cluster_volume = 1
@@ -300,7 +315,9 @@ class ClustersTests(test.TestCase):
             datastore_version=cluster_datastore_version,
             nics=cluster_network,
             root_password=None,
-            locality=None).AndReturn(self.trove_clusters.first())
+            locality=None,
+            region=self.trove_regions.first().id
+        ).AndReturn(self.trove_clusters.first())
 
         field_name = self._build_flavor_widget_name(cluster_datastore,
                                                     cluster_datastore_version)
@@ -312,18 +329,20 @@ class ClustersTests(test.TestCase):
             'num_shards': 1,
             'datastore': field_name,
             field_name: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-            'network': cluster_network
+            'network': cluster_network,
+            'region': self.trove_regions.first().id
         }
 
         res = self.client.post(LAUNCH_URL, post)
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=1)
 
-    @test.create_stubs({trove_api.trove: ['datastore_flavors',
-                                          'cluster_create',
-                                          'datastore_list',
-                                          'datastore_version_list'],
-                        api.neutron: ['network_list_for_tenant']})
+    @test.create_stubs({
+        trove_api.trove: ('cluster_create', 'datastore_flavors',
+                          'datastore_list', 'datastore_version_list',
+                          'region_list',),
+        api.neutron: ('network_list_for_tenant',)
+    })
     def test_create_simple_cluster_exception(self):
         api.neutron.network_list_for_tenant(IsA(http.HttpRequest), '1')\
             .AndReturn(self.networks.list())
@@ -337,6 +356,7 @@ class ClustersTests(test.TestCase):
                                                IsA(str))\
             .AndReturn(
                 self._get_filtered_datastore_versions(filtered_datastores))
+        trove_api.trove.region_list(IsA(http.HttpRequest)).AndReturn([])
 
         cluster_name = u'MyCluster'
         cluster_volume = 1
@@ -429,10 +449,10 @@ class ClustersTests(test.TestCase):
                                      '_detail_overview.html')
         self.assertContains(res, "Locality")
 
-    @test.create_stubs(
-        {trove_api.trove: ('cluster_get',
-                           'cluster_grow'),
-         cluster_manager: ('get',)})
+    @test.create_stubs({
+        trove_api.trove: ('cluster_get', 'cluster_grow'),
+        cluster_manager: ('get',)
+    })
     def test_grow_cluster(self):
         cluster = self.trove_clusters.first()
         trove_api.trove.cluster_get(IsA(http.HttpRequest), cluster.id)\
@@ -444,13 +464,16 @@ class ClustersTests(test.TestCase):
         instances = [
             cluster_manager.ClusterInstance("id1", "name1", cluster_flavor,
                                             cluster_flavor_name,
-                                            cluster_volume, "master", None),
+                                            cluster_volume, "master", None,
+                                            None),
             cluster_manager.ClusterInstance("id2", "name2", cluster_flavor,
                                             cluster_flavor_name,
-                                            cluster_volume, "slave", "master"),
+                                            cluster_volume, "slave", "master",
+                                            None),
             cluster_manager.ClusterInstance("id3", None, cluster_flavor,
                                             cluster_flavor_name,
-                                            cluster_volume, None, None),
+                                            cluster_volume, None, None,
+                                            None),
         ]
 
         manager = cluster_manager.ClusterInstanceManager(cluster.id)
@@ -502,10 +525,9 @@ class ClustersTests(test.TestCase):
         self.client.post(url, {'action': action})
         self.assertMessageCount(info=1)
 
-    @test.create_stubs(
-        {trove_api.trove: ('cluster_get',
-                           'cluster_grow',),
-         cluster_manager: ('get',)})
+    @test.create_stubs({
+        trove_api.trove: ('cluster_get', 'cluster_grow',),
+        cluster_manager: ('get',)})
     def test_grow_cluster_exception(self):
         cluster = self.trove_clusters.first()
         trove_api.trove.cluster_get(IsA(http.HttpRequest), cluster.id)\
@@ -517,13 +539,16 @@ class ClustersTests(test.TestCase):
         instances = [
             cluster_manager.ClusterInstance("id1", "name1", cluster_flavor,
                                             cluster_flavor_name,
-                                            cluster_volume, "master", None),
+                                            cluster_volume, "master", None,
+                                            None),
             cluster_manager.ClusterInstance("id2", "name2", cluster_flavor,
                                             cluster_flavor_name,
-                                            cluster_volume, "slave", "master"),
+                                            cluster_volume, "slave", "master",
+                                            None),
             cluster_manager.ClusterInstance("id3", None, cluster_flavor,
                                             cluster_flavor_name,
-                                            cluster_volume, None, None),
+                                            cluster_volume, None, None,
+                                            None),
         ]
 
         manager = cluster_manager.ClusterInstanceManager(cluster.id)

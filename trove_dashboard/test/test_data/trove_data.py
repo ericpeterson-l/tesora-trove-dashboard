@@ -23,6 +23,8 @@ from troveclient.v1 import instances
 from troveclient.v1 import users
 from troveclient.v1 import volume_types
 
+from keystoneclient.v3 import regions
+
 from openstack_dashboard.test.test_data import utils
 
 
@@ -50,7 +52,8 @@ CLUSTER_DATA_ONE = {
             },
             "volume": {
                 "size": 100
-            }
+            },
+            "region": "regionOne"
         },
         {
             "id": "965ef811-7c1d-47fc-89f2-a89dfdd23ef2",
@@ -63,7 +66,8 @@ CLUSTER_DATA_ONE = {
             },
             "volume": {
                 "size": 100
-            }
+            },
+            "region": "regionOne"
         },
         {
             "id": "3642f41c-e8ad-4164-a089-3891bf7f2d2b",
@@ -76,7 +80,8 @@ CLUSTER_DATA_ONE = {
             },
             "volume": {
                 "size": 100
-            }
+            },
+            "region": "regionOne"
         }
     ],
     "task": {
@@ -108,7 +113,8 @@ CLUSTER_DATA_TWO = {
             },
             "volume": {
                 "size": 100
-            }
+            },
+            "region": "regionOne"
         },
         {
             "id": "965ef811-7c1d-47fc-89f2-a88199182122232",
@@ -120,7 +126,8 @@ CLUSTER_DATA_TWO = {
             },
             "volume": {
                 "size": 100
-            }
+            },
+            "region": "regionOne"
         },
         {
             "id": "3642f41c-e8ad-4164-a089-388199182122232",
@@ -132,7 +139,8 @@ CLUSTER_DATA_TWO = {
             },
             "volume": {
                 "size": 100
-            }
+            },
+            "region": "regionOne"
         }
     ],
     "task": {
@@ -502,6 +510,18 @@ LOG_4 = {
 }
 
 
+REGION_1 = {
+    "id": "regionOne",
+    "description": ""
+}
+
+
+REGION_2 = {
+    "id": "regionTwo",
+    "description": "Description of regionTwo"
+}
+
+
 def data(TEST):
     cluster1 = clusters.Cluster(clusters.Clusters(None),
                                 CLUSTER_DATA_ONE)
@@ -567,6 +587,9 @@ def data(TEST):
     log3 = instances.DatastoreLog(instances.Instances(None), LOG_3)
     log4 = instances.DatastoreLog(instances.Instances(None), LOG_4)
 
+    region1 = regions.Region(regions.RegionManager, REGION_1)
+    region2 = regions.Region(regions.RegionManager, REGION_2)
+
     TEST.trove_clusters = utils.TestDataContainer()
     TEST.trove_clusters.add(cluster1)
     TEST.trove_clusters.add(cluster2)
@@ -618,3 +641,5 @@ def data(TEST):
     TEST.datastore_versions.add(version2)
     TEST.logs = utils.TestDataContainer()
     TEST.logs.add(log1, log2, log3, log4)
+    TEST.trove_regions = utils.TestDataContainer()
+    TEST.trove_regions.add(region1, region2)
