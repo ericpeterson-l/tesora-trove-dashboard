@@ -68,8 +68,9 @@ def cluster_create(request, name, volume, flavor, num_instances,
             instance["volume"] = {'size': volume}
         if nics:
             instance["nics"] = [{'net-id': nics}]
-        if region:
-            instance["region"] = region
+        # DUK SAYS DON'T FORGET TO UNCOMMENT THIS
+        # if region:
+        #     instance["region"] = region
         instances.append(instance)
 
     # TODO(saurabhs): vertica needs root password on cluster create
@@ -94,8 +95,9 @@ def cluster_grow(request, cluster_id, new_instances):
             instance["type"] = new_instance.type
         if new_instance.related_to:
             instance["related_to"] = new_instance.related_to
-        if new_instance.region:
-            instance["region"] = new_instance.region
+        # DUK SAYS DON'T FORGET TO UNCOMMENT THIS
+        # if new_instance.region:
+        #     instance["region"] = new_instance.region
         instances.append(instance)
     return troveclient(request).clusters.grow(cluster_id, instances)
 
@@ -154,7 +156,8 @@ def instance_create(request, name, volume, flavor, databases=None,
         configuration=configuration,
         locality=locality,
         availability_zone=availability_zone,
-        region=region
+        # DUK SAYS DON'T FORGET TO UNCOMMENT THIS
+        # region=region
     )
 
 
