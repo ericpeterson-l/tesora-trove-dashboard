@@ -58,6 +58,9 @@ class LaunchForm(forms.SelfHandlingForm):
         min_value=0,
         initial=1,
         help_text=_("Size of the volume in GB."))
+    region = forms.ChoiceField(
+        label=_("Region"),
+        required=False)
     locality = forms.ChoiceField(
         label=_("Locality"),
         choices=[("", "None"),
@@ -126,6 +129,8 @@ class LaunchForm(forms.SelfHandlingForm):
             request)
         self.fields['network'].choices = self.populate_network_choices(
             request)
+        self.fields['region'].choices = self.populate_region_choices(
+            request)
 
     def clean(self):
         datastore_field_value = self.data.get("datastore", None)
@@ -156,6 +161,9 @@ class LaunchForm(forms.SelfHandlingForm):
 
         if not self.data.get("locality", None):
             self.cleaned_data["locality"] = None
+
+        if not self.data.get("region", None):
+            self.cleaned_data["region"] = None
 
         return self.cleaned_data
 
@@ -191,6 +199,26 @@ class LaunchForm(forms.SelfHandlingForm):
                               _('Unable to retrieve networks.'),
                               redirect=redirect)
         return network_list
+
+    @memoized.memoized_method
+    def populate_region_choices(self, request):
+        try:
+            regions = trove_api.trove.region_list(request)
+        except Exception:
+            regions = []
+            redirect = reverse('horizon:project:database_clusters:index')
+            exceptions.handle(request,
+                              _('Unable to retrieve region list.'),
+                              redirect=redirect)
+
+        available_regions = []
+        for region in regions:
+            id = region.id
+            description = region.id
+            if region.description:
+                description += ' - ' + region.description
+            available_regions.append((id, description))
+        return available_regions
 
     @memoized.memoized_method
     def datastores(self, request):
@@ -323,6 +351,12 @@ class LaunchForm(forms.SelfHandlingForm):
             locality = data['locality']
         return locality
 
+    def _get_region(self, data):
+        region = None
+        if data.get('region'):
+            region = data['region']
+        return region
+
     @sensitive_variables('data')
     def handle(self, request, data):
         try:
@@ -341,9 +375,10 @@ class LaunchForm(forms.SelfHandlingForm):
             LOG.info("Launching cluster with parameters "
                      "{name=%s, volume=%s, flavor=%s, "
                      "datastore=%s, datastore_version=%s,"
-                     "locality=%s",
+                     "locality=%s, region=%s",
                      data['name'], data['volume'], flavor,
-                     datastore, datastore_version, self._get_locality(data))
+                     datastore, datastore_version, self._get_locality(data),
+                     self._get_region(data))
 
             trove_api.trove.cluster_create(request,
                                            data['name'],
@@ -354,7 +389,8 @@ class LaunchForm(forms.SelfHandlingForm):
                                            datastore_version=datastore_version,
                                            nics=data['network'],
                                            root_password=root_password,
-                                           locality=self._get_locality(data))
+                                           locality=self._get_locality(data),
+                                           region=self._get_region(data))
             messages.success(request,
                              _('Launched cluster "%s"') % data['name'])
             return True
@@ -391,11 +427,15 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
         help_text=_("Optional datastore specific value that defines the "
                     "relationship from one instance in the cluster to "
                     "another."))
+    region = forms.ChoiceField(
+        label=_("Region"),
+        required=False)
 
     def __init__(self, request, *args, **kwargs):
         super(ClusterAddInstanceForm, self).__init__(request, *args, **kwargs)
         self.fields['cluster_id'].initial = kwargs['initial']['cluster_id']
         self.fields['flavor'].choices = self.populate_flavor_choices(request)
+        self.fields['region'].choices = self.populate_region_choices(request)
 
     @memoized.memoized_method
     def flavors(self, request):
@@ -422,6 +462,26 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
         flavor_list = [(f.id, "%s" % f.name) for f in self.flavors(request)]
         return sorted(flavor_list)
 
+    @memoized.memoized_method
+    def populate_region_choices(self, request):
+        try:
+            regions = trove_api.trove.region_list(request)
+        except Exception:
+            regions = []
+            redirect = reverse('horizon:project:database_clusters:index')
+            exceptions.handle(request,
+                              _('Unable to retrieve region list.'),
+                              redirect=redirect)
+
+        available_regions = []
+        for region in regions:
+            id = region.id
+            description = region.id
+            if region.description:
+                description += ' - ' + region.description
+            available_regions.append((id, description))
+        return available_regions
+
     def handle(self, request, data):
         try:
             flavor = trove_api.trove.flavor_get(request, data['flavor'])
@@ -432,7 +492,8 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
                                  flavor.name,
                                  data['volume'],
                                  data.get('type', None),
-                                 data.get('related_to', None))
+                                 data.get('related_to', None),
+                                 data.get('region', None))
         except Exception as e:
             redirect = reverse("horizon:project:database_clusters:index")
             exceptions.handle(request,

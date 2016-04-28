@@ -18,6 +18,7 @@ from django.conf import settings
 from troveclient.v1 import client
 
 from openstack_dashboard.api import base
+from openstack_dashboard.api import keystone
 
 from horizon.utils import functions as utils
 from horizon.utils.memoized import memoized  # noqa
@@ -57,7 +58,8 @@ def cluster_delete(request, cluster_id):
 
 def cluster_create(request, name, volume, flavor, num_instances,
                    datastore, datastore_version,
-                   nics=None, root_password=None, locality=None):
+                   nics=None, root_password=None, locality=None,
+                   region=None):
     instances = []
     for i in range(num_instances):
         instance = {}
@@ -66,6 +68,8 @@ def cluster_create(request, name, volume, flavor, num_instances,
             instance["volume"] = {'size': volume}
         if nics:
             instance["nics"] = [{'net-id': nics}]
+        if region:
+            instance["region"] = region
         instances.append(instance)
 
     # TODO(saurabhs): vertica needs root password on cluster create
@@ -90,6 +94,8 @@ def cluster_grow(request, cluster_id, new_instances):
             instance["type"] = new_instance.type
         if new_instance.related_to:
             instance["related_to"] = new_instance.related_to
+        if new_instance.region:
+            instance["region"] = new_instance.region
         instances.append(instance)
     return troveclient(request).clusters.grow(cluster_id, instances)
 
@@ -124,7 +130,7 @@ def instance_create(request, name, volume, flavor, databases=None,
                     datastore=None, datastore_version=None,
                     replica_of=None, replica_count=None,
                     volume_type=None, configuration=None,
-                    locality=None, availability_zone=None):
+                    locality=None, availability_zone=None, region=None):
     # TODO(dklyle): adding conditional to support trove without volume
     # support for now until API supports checking for volume support
     if volume > 0:
@@ -148,6 +154,7 @@ def instance_create(request, name, volume, flavor, databases=None,
         configuration=configuration,
         locality=locality,
         availability_zone=availability_zone,
+        region=region
     )
 
 
@@ -413,3 +420,10 @@ def log_tail(request, instance_id, log_name, publish, lines, swift=None):
                                                         publish=publish,
                                                         lines=lines,
                                                         swift=swift)
+
+
+def region_list(request):
+    if keystone.get_version() < 3:
+        return []
+
+    return keystone.keystoneclient(request).regions.list()

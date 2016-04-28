@@ -389,10 +389,12 @@ class ClusterGrowAction(tables.Action):
         datum_display_objs = []
         for instance in table.data:
             msg = _("[flavor=%(flavor)s, volume=%(volume)s, name=%(name)s, "
-                    "type=%(type)s, related_to=%(related_to)s]")
+                    "type=%(type)s, related_to=%(related_to)s, "
+                    "region=%(region)s]")
             params = {"flavor": instance.flavor_id, "volume": instance.volume,
                       "name": instance.name, "type": instance.type,
-                      "related_to": instance.related_to}
+                      "related_to": instance.related_to,
+                      "region": instance.region}
             datum_display_objs.append(msg % params)
         display_str = functions.lazy_join(", ", datum_display_objs)
 
@@ -423,6 +425,7 @@ class ClusterGrowInstancesTable(tables.DataTable):
     volume = tables.Column("volume", verbose_name=_("Volume"))
     type = tables.Column("type", verbose_name=_("Instance Type"))
     related_to = tables.Column("related_to", verbose_name=_("Related To"))
+    region = tables.Column("region", verbose_name=_("Region"))
 
     class Meta(object):
         name = "cluster_grow_instances_table"

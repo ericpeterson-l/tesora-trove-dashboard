@@ -62,18 +62,6 @@ class SetInstanceDetailsAction(workflows.Action):
         super(SetInstanceDetailsAction, self).__init__(request,
                                                        *args,
                                                        **kwargs)
-        # add this field to the end after the dynamic fields
-        self.fields['locality'] = forms.ChoiceField(
-            label=_("Locality"),
-            choices=[("", "None"),
-                     ("affinity", "affinity"),
-                     ("anti-affinity", "anti-affinity")],
-            required=False,
-            help_text=_("Specify whether future replicated instances will "
-                        "be created on the same hypervisor (affinity) or on "
-                        "different hypervisors (anti-affinity).  "
-                        "This value is ignored if the instance to be "
-                        "launched is a replica."))
 
     class Meta(object):
         name = _("Details")
@@ -93,9 +81,6 @@ class SetInstanceDetailsAction(workflows.Action):
             if not flavor:
                 msg = _("You must select a flavor.")
                 self._errors[field_name] = self.error_class([msg])
-
-        if not self.data.get("locality", None):
-            self.cleaned_data["locality"] = None
 
         return self.cleaned_data
 
@@ -292,7 +277,7 @@ TROVE_ADD_PERMS = TROVE_ADD_USER_PERMS + TROVE_ADD_DATABASE_PERMS
 class SetInstanceDetails(workflows.Step):
     action_class = SetInstanceDetailsAction
     contributes = ("name", "volume", "volume_type", "flavor", "datastore",
-                   "locality", "availability_zone")
+                   "availability_zone")
 
 
 class SetNetworkAction(workflows.Action):
@@ -441,6 +426,20 @@ class AdvancedAction(workflows.Action):
             'data-switch-on': 'initial_state',
             'data-initial_state-master': _('Replica Count')
         }))
+    region = forms.ChoiceField(
+        label=_("Region"),
+        required=False)
+    locality = forms.ChoiceField(
+        label=_("Locality"),
+        choices=[("", "None"),
+                 ("affinity", "affinity"),
+                 ("anti-affinity", "anti-affinity")],
+        required=False,
+        help_text=_("Specify whether future replicated instances will "
+                    "be created on the same hypervisor (affinity) or on "
+                    "different hypervisors (anti-affinity).  "
+                    "This value is ignored if the instance to be "
+                    "launched is a replica."))
 
     class Meta(object):
         name = _("Advanced")
@@ -510,6 +509,33 @@ class AdvancedAction(workflows.Action):
             choices.insert(0, ("", _("No instances available")))
         return choices
 
+    @memoized.memoized_method
+    def regions(self, request):
+        try:
+            return api.trove.region_list(request)
+        except Exception:
+            LOG.exception("Exception while obtaining list of regions")
+            self._regions = []
+
+    def populate_region_choices(self, request, context):
+        try:
+            regions = self.regions(request)
+        except Exception:
+            regions = []
+            redirect = reverse('horizon:project:databases:index')
+            exceptions.handle(request,
+                              _('Unable to retrieve region list.'),
+                              redirect=redirect)
+
+        available_regions = []
+        for region in regions:
+            id = region.id
+            description = region.id
+            if region.description:
+                description += ' - ' + region.description
+            available_regions.append((id, description))
+        return available_regions
+
     def clean(self):
         cleaned_data = super(AdvancedAction, self).clean()
 
@@ -576,12 +602,16 @@ class AdvancedAction(workflows.Action):
             cleaned_data['backup'] = None
             cleaned_data['replica_count'] = None
 
+        if not self.data.get("locality", None):
+            cleaned_data["locality"] = None
+
         return cleaned_data
 
 
 class Advanced(workflows.Step):
     action_class = AdvancedAction
-    contributes = ['config', 'backup', 'master', 'replica_count']
+    contributes = ['config', 'backup', 'master', 'replica_count', 'region',
+                   'locality']
 
 
 class LaunchInstance(workflows.Workflow):
@@ -664,6 +694,12 @@ class LaunchInstance(workflows.Workflow):
             locality = context['locality']
         return locality
 
+    def _get_region(self, context):
+        region = None
+        if context.get('region'):
+            region = context['region']
+        return region
+
     def handle(self, request, context):
         try:
             avail_zone = context.get('availability_zone', None)
@@ -674,8 +710,9 @@ class LaunchInstance(workflows.Workflow):
                      "{name=%s, volume=%s, volume_type=%s, flavor=%s, "
                      "datastore=%s, datastore_version=%s, "
                      "dbs=%s, users=%s, "
-                     "backups=%s, nics=%s, replica_of=%s replica_count=%s, ",
-                     "configuration=%s, locality=%s, availability_zone=%s}",
+                     "backups=%s, nics=%s, replica_of=%s replica_count=%s, "
+                     "configuration=%s, locality=%s, availability_zone=%s, "
+                     "region=%s}",
                      context['name'], context['volume'],
                      self._get_volume_type(context), context['flavor'],
                      datastore, datastore_version,
@@ -683,7 +720,7 @@ class LaunchInstance(workflows.Workflow):
                      self._get_backup(context), self._get_nics(context),
                      context.get('master'), context['replica_count'],
                      self._get_config(context), self._get_locality(context),
-                     avail_zone)
+                     avail_zone, self._get_region(context))
             api.trove.instance_create(request,
                                       context['name'],
                                       context['volume'],
@@ -700,7 +737,8 @@ class LaunchInstance(workflows.Workflow):
                                           context),
                                       configuration=self._get_config(context),
                                       locality=self._get_locality(context),
-                                      availability_zone=avail_zone)
+                                      availability_zone=avail_zone,
+                                      region=self._get_region(context))
             return True
         except Exception:
             exceptions.handle(request)
