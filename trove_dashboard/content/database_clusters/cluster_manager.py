@@ -58,9 +58,11 @@ class ClusterInstanceManager(object):
         return None
 
     def add_instance(self, id, name, flavor_id,
-                     flavor, volume, type, related_to, region):
+                     flavor, volume, type, related_to, nics,
+                     availability_zone, region):
         instance = ClusterInstance(id, name, flavor_id, flavor,
-                                   volume, type, related_to, region)
+                                   volume, type, related_to, nics,
+                                   availability_zone, region)
         self.instances.append(instance)
         update(self.cluster_id, self)
         return self.instances
@@ -77,7 +79,7 @@ class ClusterInstanceManager(object):
 
 class ClusterInstance(object):
     def __init__(self, id, name, flavor_id, flavor, volume, type, related_to,
-                 region):
+                 nics, availability_zone, region):
         self.id = id
         self.name = name
         self.flavor_id = flavor_id
@@ -85,4 +87,6 @@ class ClusterInstance(object):
         self.volume = volume
         self.type = type
         self.related_to = related_to
+        self.nics = nics
+        self.availability_zone = availability_zone
         self.region = region

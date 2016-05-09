@@ -16,6 +16,7 @@
 
 import binascii
 import logging
+import six
 
 from django.core.urlresolvers import reverse
 from django import http
@@ -111,11 +112,14 @@ class ClustersTests(test.TestCase):
     @test.create_stubs({
         trove_api.trove: ('datastore_flavors', 'datastore_list',
                           'datastore_version_list', 'region_list',),
-        api.base: ('is_service_enabled',)
+        api.base: ('is_service_enabled',),
+        api.nova: ('availability_zone_list',)
     })
     def test_launch_cluster(self):
         api.base.is_service_enabled(IsA(http.HttpRequest), 'network')\
             .AndReturn(False)
+        api.nova.availability_zone_list(IsA(http.HttpRequest)) \
+            .AndReturn(self.availability_zones.list())
         filtered_datastores = self._get_filtered_datastores('mongodb')
         trove_api.trove.datastore_flavors(IsA(http.HttpRequest),
                                           'mongodb', '2.6')\
@@ -192,11 +196,14 @@ class ClustersTests(test.TestCase):
     @test.create_stubs({
         trove_api.trove: ('datastore_flavors', 'datastore_list',
                           'datastore_version_list', 'region_list',),
-        api.base: ('is_service_enabled',)
+        api.base: ('is_service_enabled',),
+        api.nova: ('availability_zone_list',)
     })
     def launch_cluster_fields_setup(self, datastore, datastore_version):
         api.base.is_service_enabled(IsA(http.HttpRequest), 'network')\
             .AndReturn(False)
+        api.nova.availability_zone_list(IsA(http.HttpRequest)) \
+            .AndReturn(self.availability_zones.list())
         filtered_datastores = self._get_filtered_datastores(datastore)
         trove_api.trove.datastore_flavors(IsA(http.HttpRequest),
                                           datastore, datastore_version)\
@@ -217,11 +224,14 @@ class ClustersTests(test.TestCase):
         trove_api.trove: ('cluster_create', 'datastore_flavors',
                           'datastore_list', 'datastore_version_list',
                           'region_list',),
-        api.base: ('is_service_enabled',)
+        api.base: ('is_service_enabled',),
+        api.nova: ('availability_zone_list',)
     })
     def test_create_simple_cluster(self):
         api.base.is_service_enabled(IsA(http.HttpRequest), 'network')\
             .AndReturn(False)
+        api.nova.availability_zone_list(IsA(http.HttpRequest)) \
+            .AndReturn(self.availability_zones.list())
         filtered_datastores = self._get_filtered_datastores('mongodb')
         trove_api.trove.datastore_flavors(IsA(http.HttpRequest),
                                           'mongodb', '2.6')\
@@ -253,6 +263,7 @@ class ClustersTests(test.TestCase):
             nics=cluster_network,
             root_password=None,
             locality=None,
+            availability_zone=IsA(six.text_type),
             region=self.trove_regions.first().id
         ).AndReturn(self.trove_clusters.first())
 
@@ -278,11 +289,14 @@ class ClustersTests(test.TestCase):
                           'datastore_list', 'datastore_version_list',
                           'region_list',),
         api.neutron: ('network_list_for_tenant',),
-        api.base: ('is_service_enabled',)
+        api.base: ('is_service_enabled',),
+        api.nova: ('availability_zone_list',)
     })
     def test_create_simple_cluster_neutron(self):
         api.base.is_service_enabled(IsA(http.HttpRequest), 'network')\
             .AndReturn(True)
+        api.nova.availability_zone_list(IsA(http.HttpRequest)) \
+            .AndReturn(self.availability_zones.list())
         api.neutron.network_list_for_tenant(IsA(http.HttpRequest), '1')\
             .AndReturn(self.networks.list())
         filtered_datastores = self._get_filtered_datastores('mongodb')
@@ -316,6 +330,7 @@ class ClustersTests(test.TestCase):
             nics=cluster_network,
             root_password=None,
             locality=None,
+            availability_zone=IsA(six.text_type),
             region=self.trove_regions.first().id
         ).AndReturn(self.trove_clusters.first())
 
@@ -341,11 +356,14 @@ class ClustersTests(test.TestCase):
         trove_api.trove: ('cluster_create', 'datastore_flavors',
                           'datastore_list', 'datastore_version_list',
                           'region_list',),
-        api.neutron: ('network_list_for_tenant',)
+        api.neutron: ('network_list_for_tenant',),
+        api.nova: ('availability_zone_list',)
     })
     def test_create_simple_cluster_exception(self):
         api.neutron.network_list_for_tenant(IsA(http.HttpRequest), '1')\
             .AndReturn(self.networks.list())
+        api.nova.availability_zone_list(IsA(http.HttpRequest)) \
+            .AndReturn(self.availability_zones.list())
         filtered_datastores = self._get_filtered_datastores('mongodb')
         trove_api.trove.datastore_flavors(IsA(http.HttpRequest),
                                           'mongodb', '2.6')\
@@ -374,7 +392,9 @@ class ClustersTests(test.TestCase):
             datastore=cluster_datastore,
             datastore_version=cluster_datastore_version,
             nics=cluster_network,
-            root_password=None).AndReturn(self.trove_clusters.first())
+            root_password=None,
+            availability_zone=IsA(six.text_type)
+        ).AndReturn(self.trove_clusters.first())
 
         field_name = self._build_flavor_widget_name(cluster_datastore,
                                                     cluster_datastore_version)
@@ -465,15 +485,15 @@ class ClustersTests(test.TestCase):
             cluster_manager.ClusterInstance("id1", "name1", cluster_flavor,
                                             cluster_flavor_name,
                                             cluster_volume, "master", None,
-                                            None),
+                                            None, "AZ1", None),
             cluster_manager.ClusterInstance("id2", "name2", cluster_flavor,
                                             cluster_flavor_name,
                                             cluster_volume, "slave", "master",
-                                            None),
+                                            None, "AZ2", None),
             cluster_manager.ClusterInstance("id3", None, cluster_flavor,
                                             cluster_flavor_name,
                                             cluster_volume, None, None,
-                                            None),
+                                            None, "AZ3", None),
         ]
 
         manager = cluster_manager.ClusterInstanceManager(cluster.id)
@@ -540,15 +560,15 @@ class ClustersTests(test.TestCase):
             cluster_manager.ClusterInstance("id1", "name1", cluster_flavor,
                                             cluster_flavor_name,
                                             cluster_volume, "master", None,
-                                            None),
+                                            None, "AZ1", None),
             cluster_manager.ClusterInstance("id2", "name2", cluster_flavor,
                                             cluster_flavor_name,
                                             cluster_volume, "slave", "master",
-                                            None),
+                                            None, "AZ2", None),
             cluster_manager.ClusterInstance("id3", None, cluster_flavor,
                                             cluster_flavor_name,
                                             cluster_volume, None, None,
-                                            None),
+                                            None, "AZ3", None),
         ]
 
         manager = cluster_manager.ClusterInstanceManager(cluster.id)

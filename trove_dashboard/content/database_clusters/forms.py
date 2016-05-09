@@ -40,6 +40,9 @@ LOG = logging.getLogger(__name__)
 
 
 class LaunchForm(forms.SelfHandlingForm):
+    availability_zone = forms.ChoiceField(
+        label=_("Availability Zone"),
+        required=False)
     name = forms.CharField(label=_("Cluster Name"),
                            max_length=80)
     datastore = forms.ChoiceField(
@@ -129,6 +132,8 @@ class LaunchForm(forms.SelfHandlingForm):
             request)
         self.fields['network'].choices = self.populate_network_choices(
             request)
+        self.fields['availability_zone'].choices = (
+            self.populate_availability_zone_choices(request))
         self.fields['region'].choices = self.populate_region_choices(
             request)
 
@@ -199,6 +204,26 @@ class LaunchForm(forms.SelfHandlingForm):
                               _('Unable to retrieve networks.'),
                               redirect=redirect)
         return network_list
+
+    @memoized.memoized_method
+    def populate_availability_zone_choices(self, request):
+        try:
+            zones = api.nova.availability_zone_list(request)
+        except Exception:
+            zones = []
+            redirect = reverse('horizon:project:database_clusters:index')
+            exceptions.handle(request,
+                              _('Unable to retrieve availability zones.'),
+                              redirect=redirect)
+
+        zone_list = [(zone.zoneName, zone.zoneName)
+                     for zone in zones if zone.zoneState['available']]
+        zone_list.sort()
+        if not zone_list:
+            zone_list.insert(0, ("", _("No availability zones found")))
+        elif len(zone_list) > 1:
+            zone_list.insert(0, ("", _("Any Availability Zone")))
+        return zone_list
 
     @memoized.memoized_method
     def populate_region_choices(self, request):
@@ -360,6 +385,7 @@ class LaunchForm(forms.SelfHandlingForm):
     @sensitive_variables('data')
     def handle(self, request, data):
         try:
+            avail_zone = data.get('availability_zone', None)
             datastore, datastore_version = (
                 create_instance.parse_datastore_and_version_text(
                     binascii.unhexlify(data['datastore'])))
@@ -375,10 +401,10 @@ class LaunchForm(forms.SelfHandlingForm):
             LOG.info("Launching cluster with parameters "
                      "{name=%s, volume=%s, flavor=%s, "
                      "datastore=%s, datastore_version=%s,"
-                     "locality=%s, region=%s",
+                     "locality=%s, AZ=%s, region=%s",
                      data['name'], data['volume'], flavor,
                      datastore, datastore_version, self._get_locality(data),
-                     self._get_region(data))
+                     avail_zone, self._get_region(data))
 
             trove_api.trove.cluster_create(request,
                                            data['name'],
@@ -390,6 +416,7 @@ class LaunchForm(forms.SelfHandlingForm):
                                            nics=data['network'],
                                            root_password=root_password,
                                            locality=self._get_locality(data),
+                                           availability_zone=avail_zone,
                                            region=self._get_region(data))
             messages.success(request,
                              _('Launched cluster "%s"') % data['name'])
@@ -405,6 +432,9 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
     cluster_id = forms.CharField(
         required=False,
         widget=forms.HiddenInput())
+    availability_zone = forms.ChoiceField(
+        label=_("Availability Zone"),
+        required=False)
     flavor = forms.ChoiceField(
         label=_("Flavor"),
         help_text=_("Size of image to launch."))
@@ -427,6 +457,10 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
         help_text=_("Optional datastore specific value that defines the "
                     "relationship from one instance in the cluster to "
                     "another."))
+    network = forms.ChoiceField(
+        label=_("Network"),
+        help_text=_("Network attached to instance."),
+        required=False)
     region = forms.ChoiceField(
         label=_("Region"),
         required=False)
@@ -435,6 +469,10 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
         super(ClusterAddInstanceForm, self).__init__(request, *args, **kwargs)
         self.fields['cluster_id'].initial = kwargs['initial']['cluster_id']
         self.fields['flavor'].choices = self.populate_flavor_choices(request)
+        self.fields['network'].choices = self.populate_network_choices(
+            request)
+        self.fields['availability_zone'].choices = (
+            self.populate_availability_zone_choices(request))
         self.fields['region'].choices = self.populate_region_choices(request)
 
     @memoized.memoized_method
@@ -461,6 +499,46 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
     def populate_flavor_choices(self, request):
         flavor_list = [(f.id, "%s" % f.name) for f in self.flavors(request)]
         return sorted(flavor_list)
+
+    @memoized.memoized_method
+    def populate_network_choices(self, request):
+        network_list = []
+        try:
+            if api.base.is_service_enabled(request, 'network'):
+                tenant_id = self.request.user.tenant_id
+                networks = api.neutron.network_list_for_tenant(request,
+                                                               tenant_id)
+                network_list = [(network.id, network.name_or_id)
+                                for network in networks]
+            else:
+                self.fields['network'].widget = forms.HiddenInput()
+        except exceptions.ServiceCatalogException:
+            network_list = []
+            redirect = reverse('horizon:project:database_clusters:index')
+            exceptions.handle(request,
+                              _('Unable to retrieve networks.'),
+                              redirect=redirect)
+        return network_list
+
+    @memoized.memoized_method
+    def populate_availability_zone_choices(self, request):
+        try:
+            zones = api.nova.availability_zone_list(request)
+        except Exception:
+            zones = []
+            redirect = reverse('horizon:project:database_clusters:index')
+            exceptions.handle(request,
+                              _('Unable to retrieve availability zones.'),
+                              redirect=redirect)
+
+        zone_list = [(zone.zoneName, zone.zoneName)
+                     for zone in zones if zone.zoneState['available']]
+        zone_list.sort()
+        if not zone_list:
+            zone_list.insert(0, ("", _("No availability zones found")))
+        elif len(zone_list) > 1:
+            zone_list.insert(0, ("", _("Any Availability Zone")))
+        return zone_list
 
     @memoized.memoized_method
     def populate_region_choices(self, request):
@@ -493,6 +571,8 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
                                  data['volume'],
                                  data.get('type', None),
                                  data.get('related_to', None),
+                                 data.get('network', None),
+                                 data.get('availability_zone', None),
                                  data.get('region', None))
         except Exception as e:
             redirect = reverse("horizon:project:database_clusters:index")
