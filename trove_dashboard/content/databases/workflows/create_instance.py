@@ -421,6 +421,9 @@ class AdvancedAction(workflows.Action):
 
         super(AdvancedAction, self).__init__(request, *args, **kwargs)
 
+        if not getattr(settings, 'DATABASE_ENABLE_REGION_SUPPORT', False):
+            self.fields['region'].widget = forms.HiddenInput()
+
         if self.backup_id:
             self.fields['initial_state'].choices = [('backup',
                                                     _('Restore from Backup'))]
