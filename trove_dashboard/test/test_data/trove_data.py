@@ -240,7 +240,8 @@ BACKUP_ONE = {
     "description": "Long description of backup",
     "datastore": {
         "type": "mysql",
-        "version": "5.6"
+        "version": "5.6",
+        "version_id": "500a6d52-8347-4e00-8e4c-f4fa9cf96ae9"
     },
 }
 
@@ -256,7 +257,8 @@ BACKUP_TWO = {
     "description": "Longer description of backup",
     "datastore": {
         "type": "mysql",
-        "version": "5.6"
+        "version": "5.6",
+        "version_id": "500a6d52-8347-4e00-8e4c-f4fa9cf96ae9"
     },
 }
 
@@ -273,7 +275,8 @@ BACKUP_TWO_INC = {
     "parent_id": "e4602a3c-2bca-478f-b059-b6c215510fb4",
     "datastore": {
         "type": "mysql",
-        "version": "5.6"
+        "version": "5.6",
+        "version_id": "500a6d52-8347-4e00-8e4c-f4fa9cf96ae9"
     },
 }
 
