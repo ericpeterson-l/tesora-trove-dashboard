@@ -13,7 +13,7 @@
 #    under the License.
 
 from django.core import urlresolvers
-from django.template import defaultfilters as filters
+# from django.template import defaultfilters as filters
 from django.utils.translation import ugettext_lazy as _
 
 from horizon import tables
@@ -52,12 +52,12 @@ def get_image_url(version):
 class VersionsTable(tables.DataTable):
     name = tables.Column("name", verbose_name=_("Version name"))
     id = tables.Column("id", verbose_name=_("Version ID"))
-    active = tables.Column("active", verbose_name=_("Active"),
-                           filters=(filters.yesno, filters.capfirst))
-    packages = tables.Column("packages", verbose_name=_("Packages"))
-    image = tables.Column("image",
-                          link=get_image_url,
-                          verbose_name=_("Image ID"))
+    # active = tables.Column("active", verbose_name=_("Active"),
+    #                        filters=(filters.yesno, filters.capfirst))
+    # packages = tables.Column("packages", verbose_name=_("Packages"))
+    # image = tables.Column("image",
+    #                       link=get_image_url,
+    #                       verbose_name=_("Image ID"))
 
     class Meta(object):
         name = "versions"
