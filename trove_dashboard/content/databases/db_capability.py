@@ -51,13 +51,17 @@ def can_modify_cluster(datastore):
 
 
 def db_required_when_creating_user(datastore):
-    if is_oracle_ra_datastore(datastore):
+    if is_oracle_ra_datastore(datastore) or is_couchbase_datastore(datastore):
         return False
     return True
 
 
 def is_cluster_capable_datastore(datastore):
     return _is_datastore_in_list(datastore, _cluster_capable_datastores)
+
+
+def is_couchbase_datastore(datastore):
+    return (datastore is not None) and (COUCHBASE in datastore.lower())
 
 
 def is_datastax_enterprise(datastore):
