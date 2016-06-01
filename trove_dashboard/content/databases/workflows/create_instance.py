@@ -517,14 +517,11 @@ class AdvancedAction(workflows.Action):
             exceptions.handle(request,
                               _('Unable to retrieve region list.'),
                               redirect=redirect)
-
-        available_regions = []
-        for region in regions:
-            id = region.id
-            description = region.id
-            if region.description:
-                description += ' - ' + region.description
-            available_regions.append((id, description))
+        available_regions = [(region, region) for region in regions]
+        if not available_regions:
+            available_regions.insert(0, ("", _("No regions found")))
+        elif len(available_regions) > 1:
+            available_regions.insert(0, ("", _("Default region")))
         return available_regions
 
     def clean(self):
@@ -729,7 +726,7 @@ class LaunchInstance(workflows.Workflow):
                                       configuration=self._get_config(context),
                                       locality=self._get_locality(context),
                                       availability_zone=avail_zone,
-                                      region=self._get_region(context))
+                                      region_name=self._get_region(context))
             return True
         except Exception:
             exceptions.handle(request)

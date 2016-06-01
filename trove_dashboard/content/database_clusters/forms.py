@@ -17,6 +17,7 @@ import binascii
 import logging
 import uuid
 
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.debug import sensitive_variables  # noqa
@@ -136,6 +137,8 @@ class LaunchForm(forms.SelfHandlingForm):
             self.populate_availability_zone_choices(request))
         self.fields['region'].choices = self.populate_region_choices(
             request)
+        if not getattr(settings, 'DATABASE_ENABLE_REGION_SUPPORT', False):
+            self.fields['region'].widget = forms.HiddenInput()
 
     def clean(self):
         datastore_field_value = self.data.get("datastore", None)
@@ -235,14 +238,11 @@ class LaunchForm(forms.SelfHandlingForm):
             exceptions.handle(request,
                               _('Unable to retrieve region list.'),
                               redirect=redirect)
-
-        available_regions = []
-        for region in regions:
-            id = region.id
-            description = region.id
-            if region.description:
-                description += ' - ' + region.description
-            available_regions.append((id, description))
+        available_regions = [(region, region) for region in regions]
+        if not available_regions:
+            available_regions.insert(0, ("", _("No regions found")))
+        elif len(available_regions) > 1:
+            available_regions.insert(0, ("", _("Default region")))
         return available_regions
 
     @memoized.memoized_method
@@ -474,6 +474,8 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
         self.fields['availability_zone'].choices = (
             self.populate_availability_zone_choices(request))
         self.fields['region'].choices = self.populate_region_choices(request)
+        if not getattr(settings, 'DATABASE_ENABLE_REGION_SUPPORT', False):
+            self.fields['region'].widget = forms.HiddenInput()
 
     @memoized.memoized_method
     def flavors(self, request):
@@ -550,14 +552,11 @@ class ClusterAddInstanceForm(forms.SelfHandlingForm):
             exceptions.handle(request,
                               _('Unable to retrieve region list.'),
                               redirect=redirect)
-
-        available_regions = []
-        for region in regions:
-            id = region.id
-            description = region.id
-            if region.description:
-                description += ' - ' + region.description
-            available_regions.append((id, description))
+        available_regions = [(region, region) for region in regions]
+        if not available_regions:
+            available_regions.insert(0, ("", _("No regions found")))
+        elif len(available_regions) > 1:
+            available_regions.insert(0, ("", _("Default region")))
         return available_regions
 
     def handle(self, request, data):

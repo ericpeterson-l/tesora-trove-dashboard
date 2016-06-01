@@ -264,7 +264,7 @@ class ClustersTests(test.TestCase):
             root_password=None,
             locality=None,
             availability_zone=IsA(six.text_type),
-            region=self.trove_regions.first().id
+            region=None
         ).AndReturn(self.trove_clusters.first())
 
         field_name = self._build_flavor_widget_name(cluster_datastore,
@@ -277,7 +277,7 @@ class ClustersTests(test.TestCase):
             'num_shards': 1,
             'datastore': field_name,
             field_name: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-            'region': self.trove_regions.first().id
+            'region': ""
         }
 
         res = self.client.post(LAUNCH_URL, post)
@@ -331,7 +331,7 @@ class ClustersTests(test.TestCase):
             root_password=None,
             locality=None,
             availability_zone=IsA(six.text_type),
-            region=self.trove_regions.first().id
+            region=None
         ).AndReturn(self.trove_clusters.first())
 
         field_name = self._build_flavor_widget_name(cluster_datastore,
@@ -345,7 +345,7 @@ class ClustersTests(test.TestCase):
             'datastore': field_name,
             field_name: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
             'network': cluster_network,
-            'region': self.trove_regions.first().id
+            'region': ""
         }
 
         res = self.client.post(LAUNCH_URL, post)

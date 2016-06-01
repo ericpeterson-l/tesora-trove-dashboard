@@ -297,7 +297,7 @@ class DatabaseTests(test.TestCase):
             volume_type=None,
             locality=None,
             availability_zone=IsA(six.text_type),
-            region=None
+            region_name=None
         ).AndReturn(self.databases.first())
 
         self.mox.ReplayAll()
@@ -384,7 +384,7 @@ class DatabaseTests(test.TestCase):
             volume_type=None,
             locality=None,
             availability_zone=IsA(six.text_type),
-            region=None
+            region_name=None
         ).AndRaise(trove_exception)
 
         self.mox.ReplayAll()
@@ -1134,7 +1134,7 @@ class DatabaseTests(test.TestCase):
             volume_type=None,
             locality=None,
             availability_zone=IsA(six.text_type),
-            region=None
+            region_name=None
         ).AndReturn(self.databases.first())
 
         self.mox.ReplayAll()

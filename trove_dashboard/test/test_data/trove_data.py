@@ -23,8 +23,6 @@ from troveclient.v1 import instances
 from troveclient.v1 import users
 from troveclient.v1 import volume_types
 
-from keystoneclient.v3 import regions
-
 from openstack_dashboard.test.test_data import utils
 
 
@@ -513,18 +511,6 @@ LOG_4 = {
 }
 
 
-REGION_1 = {
-    "id": "regionOne",
-    "description": ""
-}
-
-
-REGION_2 = {
-    "id": "regionTwo",
-    "description": "Description of regionTwo"
-}
-
-
 def data(TEST):
     cluster1 = clusters.Cluster(clusters.Clusters(None),
                                 CLUSTER_DATA_ONE)
@@ -590,8 +576,8 @@ def data(TEST):
     log3 = instances.DatastoreLog(instances.Instances(None), LOG_3)
     log4 = instances.DatastoreLog(instances.Instances(None), LOG_4)
 
-    region1 = regions.Region(regions.RegionManager, REGION_1)
-    region2 = regions.Region(regions.RegionManager, REGION_2)
+    region1 = "regionOne"
+    region2 = "regionTwo"
 
     TEST.trove_clusters = utils.TestDataContainer()
     TEST.trove_clusters.add(cluster1)
