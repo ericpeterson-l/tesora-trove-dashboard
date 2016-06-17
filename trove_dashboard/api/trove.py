@@ -15,13 +15,16 @@
 import logging
 
 from django.conf import settings
-from troveclient.v1 import client
+
+from horizon.utils import functions as utils
+from horizon.utils.memoized import memoized  # noqa
 
 from openstack_auth import utils as auth_utils
 from openstack_dashboard.api import base
 
-from horizon.utils import functions as utils
-from horizon.utils.memoized import memoized  # noqa
+from troveclient.common import Paginated
+from troveclient.v1 import client
+
 
 LOG = logging.getLogger(__name__)
 
@@ -133,6 +136,29 @@ def instance_list_all(request):
         instances.links = temp_instances.links
     instances.next = None
     return instances
+
+
+def instance_list_master(request, marker=None):
+    page_size = utils.get_page_size(request)
+    master_instances = []
+    new_marker = marker
+    while len(master_instances) < page_size:
+        instances = instance_list(request, marker=new_marker)
+        for instance in instances:
+            if hasattr(instance, 'replicas'):
+                master_instances.append(instance)
+            if len(master_instances) >= page_size:
+                break
+        if len(master_instances) >= page_size:
+            new_marker = instance.id
+            break
+        new_marker = instances.next
+        if not new_marker:
+            break
+
+    paginated_instances = Paginated(items=master_instances,
+                                    next_marker=new_marker)
+    return paginated_instances
 
 
 def instance_get(request, instance_id):
