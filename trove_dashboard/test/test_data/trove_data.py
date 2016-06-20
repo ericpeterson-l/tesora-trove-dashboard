@@ -278,6 +278,39 @@ BACKUP_TWO_INC = {
     },
 }
 
+BACKUP_SCHEDULE_ONE = {
+    "id": "30aa4a16-3f22-429e-ae93-201cad729d75",
+    "instance": "4d7b3f57-44f5-41d2-8e86-36b88cad572a",
+    "name": "backup1",
+    "pattern": "* * 1 * * *",
+    "next_execution_time": "2016-08-01T00:00:00",
+    "input": "{\"description\": \"description of backup1\", "
+             "\"parent_id\": \"2c8cd131-08e3-48bd-94ed-ac201d94b3cb\"}"
+}
+
+BACKUP_SCHEDULE_TWO = {
+    "id": "955233fd-57d1-480d-8161-393df771997f",
+    "instance": "6ddc36d9-73db-4e23-b52e-368937d72719",
+    "name": "backup2",
+    "pattern": "30 * * * * *",
+    "next_execution_time": "2016-08-01T00:30:00",
+    "input": "{\"description\": \"description of backup2\"}"
+}
+
+BACKUP_EXECUTION_ONE = {
+    "id": "30aa4a16-3f22-429e-ae93-201cad729d79",
+    "created_at": "2016-07-01T00:00:00",
+    "state": "error",
+    "output": "there was some error",
+}
+
+BACKUP_EXECUTION_TWO = {
+    "id": "30aa4a16-3f22-429e-ae93-201cad729d73",
+    "created_at": "2016-08-01T00:00:00",
+    "state": "error",
+    "output": "there was some error",
+}
+
 CONFIG_ONE = {
     "updated": "2014-07-11T14:33:35",
     "name": "config1",
@@ -525,6 +558,14 @@ def data(TEST):
     bkup1 = backups.Backup(backups.Backups(None), BACKUP_ONE)
     bkup2 = backups.Backup(backups.Backups(None), BACKUP_TWO)
     bkup3 = backups.Backup(backups.Backups(None), BACKUP_TWO_INC)
+    bkup_sched_1 = backups.Schedule(backups.Backups(None),
+                                    BACKUP_SCHEDULE_ONE)
+    bkup_sched_2 = backups.Schedule(backups.Backups(None),
+                                    BACKUP_SCHEDULE_TWO)
+    bkup_sched_1_execution_1 = backups.ScheduleExecution(backups.Backups(None),
+                                                         BACKUP_EXECUTION_ONE)
+    bkup_sched_1_execution_2 = backups.ScheduleExecution(backups.Backups(None),
+                                                         BACKUP_EXECUTION_TWO)
 
     cfg1 = configurations.Configuration(configurations.Configurations(None),
                                         CONFIG_ONE)
@@ -597,6 +638,12 @@ def data(TEST):
     TEST.database_backups.add(bkup1)
     TEST.database_backups.add(bkup2)
     TEST.database_backups.add(bkup3)
+
+    TEST.database_backup_schedules = utils.TestDataContainer()
+    TEST.database_backup_schedules.add(bkup_sched_1, bkup_sched_2)
+    TEST.database_backup_schedule_executions = utils.TestDataContainer()
+    TEST.database_backup_schedule_executions.add(bkup_sched_1_execution_1,
+                                                 bkup_sched_1_execution_2)
 
     TEST.database_configurations.add(cfg1)
     TEST.database_configurations.add(cfg2)

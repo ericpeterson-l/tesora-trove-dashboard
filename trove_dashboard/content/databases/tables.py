@@ -27,6 +27,8 @@ from horizon.utils import filters
 from trove_dashboard import api
 from trove_dashboard.content.database_backups \
     import tables as backup_tables
+from trove_dashboard.content.databases.schedules \
+    import tables as schedules_tables
 from trove_dashboard.content.databases.upgrade \
     import tables as upgrade_tables
 from trove_dashboard.content import utils as database_utils
@@ -643,6 +645,7 @@ class InstancesTable(tables.DataTable):
                        ViewReplicas,
                        ManageRoot,
                        upgrade_tables.UpgradeInstanceAction,
+                       schedules_tables.ViewSchedules,
                        RestartInstance,
                        DeleteInstance)
 
