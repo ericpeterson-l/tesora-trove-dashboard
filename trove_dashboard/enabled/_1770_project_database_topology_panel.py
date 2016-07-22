@@ -19,7 +19,7 @@ PANEL = 'database_topology'
 # The slug of the dashboard the PANEL associated with. Required.
 PANEL_DASHBOARD = 'project'
 # The slug of the panel group the PANEL is associated with.
-PANEL_GROUP = 'database_topology'
+PANEL_GROUP = 'database'
 
 # Python panel class of the PANEL to be added.
 ADD_PANEL = ('trove_dashboard.content.database_topology.panel.Topology')
