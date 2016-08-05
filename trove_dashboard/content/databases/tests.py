@@ -237,6 +237,7 @@ class DatabaseTests(test.TestCase):
                     'instance_get', 'instance_list_all',
                     'region_list',
                     ),
+        dash_api.cinder: ('volume_type_list',),
         dash_api.neutron: ('network_list',),
         dash_api.nova: ('availability_zone_list',)
     })
@@ -249,7 +250,6 @@ class DatabaseTests(test.TestCase):
                                          IsA(six.string_types),
                                          IsA(six.string_types)). \
             MultipleTimes().AndReturn(self.database_volume_types.list())
-
         api.trove.backup_list(IsA(http.HttpRequest)).AndReturn(
             self.database_backups.list())
         (api.trove.configuration_list(IsA(http.HttpRequest)))
@@ -325,6 +325,7 @@ class DatabaseTests(test.TestCase):
                     'instance_get', 'instance_list_all',
                     'region_list',
                     ),
+        dash_api.cinder: ('volume_type_list',),
         dash_api.neutron: ('network_list',),
         dash_api.nova: ('availability_zone_list',)
     })
@@ -1080,6 +1081,7 @@ class DatabaseTests(test.TestCase):
                     'instance_get', 'instance_list_all',
                     'region_list',
                     ),
+        dash_api.cinder: ('volume_type_list',),
         dash_api.neutron: ('network_list',),
         dash_api.nova: ('availability_zone_list',)
     })
@@ -1092,7 +1094,6 @@ class DatabaseTests(test.TestCase):
                                          IsA(six.string_types),
                                          IsA(six.string_types)).\
             MultipleTimes().AndReturn(self.database_volume_types.list())
-
         api.trove.backup_list(IsA(http.HttpRequest)).AndReturn(
             self.database_backups.list())
         api.trove.configuration_list(IsA(http.HttpRequest))

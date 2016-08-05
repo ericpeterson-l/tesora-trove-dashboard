@@ -65,9 +65,9 @@ class DatabasesBackupsTests(test.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertMessageCount(res, error=1)
 
-    @test.create_stubs({api.trove: ('instance_list',
-                                    'backup_list',
-                                    'backup_create')})
+    @test.create_stubs({
+        api.trove: ('instance_list', 'backup_list', 'backup_create'),
+    })
     def test_launch_backup(self):
         api.trove.instance_list(IsA(http.HttpRequest))\
             .AndReturn(self.databases.list())
@@ -98,7 +98,9 @@ class DatabasesBackupsTests(test.TestCase):
         self.assertNoFormErrors(res)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({api.trove: ('instance_list', 'backup_list')})
+    @test.create_stubs({
+        api.trove: ('instance_list', 'backup_list'),
+    })
     def test_launch_backup_exception(self):
         api.trove.instance_list(IsA(http.HttpRequest))\
             .AndRaise(self.exceptions.trove)
@@ -112,9 +114,9 @@ class DatabasesBackupsTests(test.TestCase):
         self.assertTemplateUsed(res,
                                 'project/database_backups/backup.html')
 
-    @test.create_stubs({api.trove: ('instance_list',
-                                    'backup_list',
-                                    'backup_create')})
+    @test.create_stubs({
+        api.trove: ('instance_list', 'backup_list', 'backup_create'),
+    })
     def test_launch_backup_incr(self):
         api.trove.instance_list(IsA(http.HttpRequest)) \
             .AndReturn(self.databases.list())
