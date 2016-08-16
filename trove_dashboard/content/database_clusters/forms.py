@@ -473,6 +473,7 @@ class LaunchForm(forms.SelfHandlingForm):
         extended_properties = None
 
         if db_capability.is_oracle_rac_datastore(datastore):
+            extended_properties = {}
             extended_properties['database'] = data['oracle_rac_database']
             extended_properties['votedisk_mount'] = (
                 data['oracle_rac_votedisk_mount']
