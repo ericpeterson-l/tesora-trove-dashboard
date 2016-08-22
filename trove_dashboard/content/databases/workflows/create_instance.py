@@ -534,6 +534,14 @@ class AdvancedAction(workflows.Action):
             except Exception:
                 raise forms.ValidationError(_("Unable to find configuration "
                                               "group!"))
+            if cfg.datastore_name != datastore:
+                raise forms.ValidationError(_("The datastore and the "
+                                              "configuration group do not "
+                                              "match."))
+            if datastore_version != cfg.datastore_version_name:
+                raise forms.ValidationError(_("The datastore version and the "
+                                              "configuration group version do "
+                                              "not match."))
         else:
             if db_capability.require_configuration_group(datastore):
                 msg = _('This datastore requires a configuration group.')
